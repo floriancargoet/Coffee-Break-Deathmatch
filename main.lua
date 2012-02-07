@@ -11,32 +11,36 @@ setmetatable(_G, {__newindex = function(t,k,v)
 	print(string.format('%s:%d:  Global found "%s"', info.source:sub(2), info.currentline, k))
 	rawset(_G,k,v)
 end})
+--
+
+local game = require 'game'
 
 -- Executed at startup
 function love.load()
-
+    game.load()
 end
 
 -- Executed each step
 function love.update(dt)
-
+    game.update(dt)
 end
 
 function love.keypressed(key)
 	if love.keyboard.isDown('escape') then
 		os.exit(0)
 	end
+    game.keypressed(key)
 end
 
 function love.keyreleased(key)
-
+    game.keyreleased(key)
 end
 
 function love.mousepressed(x, y, button)
-
+    game.mousepressed(x, y, button)
 end
 
 -- Drawing operations
 function love.draw()
-
+    game.draw()
 end
