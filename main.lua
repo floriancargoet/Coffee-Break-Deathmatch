@@ -6,10 +6,10 @@ require 'lib/middleclass'
 global = {}
 setmetatable(global, {__newindex = function(t, k, v) rawset(_G, k, v) end})
 setmetatable(_G, {__newindex = function(t,k,v)
-  local info = debug.getinfo(2, 'Sl')
-  -- We substring because love 0.8.0 adds an @ before the filename
-  print(string.format('%s:%d:  Global found "%s"', info.source:sub(2), info.currentline, k))
-  rawset(_G,k,v)
+	local info = debug.getinfo(2, 'Sl')
+	-- We substring because love 0.8.0 adds an @ before the filename
+	print(string.format('%s:%d:  Global found "%s"', info.source:sub(2), info.currentline, k))
+	rawset(_G,k,v)
 end})
 
 -- Executed at startup
