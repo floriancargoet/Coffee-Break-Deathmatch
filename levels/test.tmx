@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <map version="1.0" orientation="orthogonal" width="27" height="24" tilewidth="32" tileheight="32">
  <tileset firstgid="1" name="test" tilewidth="32" tileheight="32">
-  <image source="../graphics/test_tiles.tga" trans="000001" width="128" height="32"/>
+  <image source="tilesets/test_tiles.tga" trans="000001" width="128" height="32"/>
  </tileset>
  <layer name="Calque de Tile 1" width="27" height="24">
   <data encoding="base64" compression="zlib">

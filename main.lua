@@ -1,5 +1,6 @@
 TILED_LOADER_PATH = 'lib/AdvTiledLoader/'
 ATL = require 'lib/AdvTiledLoader'
+ATL.Loader.path = "levels/"
 require 'lib/middleclass'
 
 -- Prevent from using globals

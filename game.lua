@@ -2,7 +2,7 @@ local game = {}
 
 -- Executed at startup
 function game.load()
-    game.map = ATL.Loader.load('levels/test.tmx')
+    game.map = ATL.Loader.load('test.tmx')
 end
 
 -- Executed each step
