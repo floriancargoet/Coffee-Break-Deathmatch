@@ -18,30 +18,33 @@ local game = require 'game'
 
 -- Executed at startup
 function love.load()
-    game.load()
+    game:load()
 end
 
 -- Executed each step
 function love.update(dt)
-    game.update(dt)
+    game:update(dt)
 end
 
 function love.keypressed(key)
 	if love.keyboard.isDown('escape') then
 		os.exit(0)
 	end
-    game.keypressed(key)
+    game:keypressed(key)
 end
 
 function love.keyreleased(key)
-    game.keyreleased(key)
+    game:keyreleased(key)
 end
 
 function love.mousepressed(x, y, button)
-    game.mousepressed(x, y, button)
+    game:mousepressed(x, y, button)
 end
 
 -- Drawing operations
 function love.draw()
-    game.draw()
+	love.graphics.setBackgroundColor(50, 50, 50)
+    love.graphics.clear()
+    game:draw()
+    love.graphics.print(love.timer.getFPS(), 0, 0)
 end
