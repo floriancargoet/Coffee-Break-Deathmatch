@@ -73,7 +73,7 @@ function Player:updatePhysics(dt, tiles)
     if self:isOnGround(tiles) then
         self.inAir = false
         self.vy = 0
-    else 
+    else
         self.inAir = true
     end
 
