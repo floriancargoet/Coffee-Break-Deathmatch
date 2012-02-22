@@ -7,10 +7,10 @@ require 'lib/middleclass'
 global = {}
 setmetatable(global, {__newindex = function(t, k, v) rawset(_G, k, v) end})
 setmetatable(_G, {__newindex = function(t,k,v)
-	local info = debug.getinfo(2, 'Sl')
-	-- We substring because love 0.8.0 adds an @ before the filename
-	print(string.format('%s:%d:  Global found "%s"', info.source:sub(2), info.currentline, k))
-	rawset(_G,k,v)
+    local info = debug.getinfo(2, 'Sl')
+    -- We substring because love 0.8.0 adds an @ before the filename
+    print(string.format('%s:%d:  Global found "%s"', info.source:sub(2), info.currentline, k))
+    rawset(_G,k,v)
 end})
 --
 
@@ -27,9 +27,9 @@ function love.update(dt)
 end
 
 function love.keypressed(key)
-	if love.keyboard.isDown('escape') then
-		os.exit(0)
-	end
+    if love.keyboard.isDown('escape') then
+        os.exit(0)
+    end
     game:keypressed(key)
 end
 
@@ -43,7 +43,7 @@ end
 
 -- Drawing operations
 function love.draw()
-	love.graphics.setBackgroundColor(50, 50, 50)
+    love.graphics.setBackgroundColor(50, 50, 50)
     love.graphics.clear()
     game:draw()
     love.graphics.print(love.timer.getFPS(), 0, 0)
