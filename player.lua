@@ -26,7 +26,7 @@ function Player:bumpInWalls(tiles)
                 local tilex = (i-1)*32
                 local tiley = (j-1)*32
                 
-                if self.x < tilex + 32 and self.x + 32 > tilex and self.y < tiley + 32 and self.y + 64 > tiley then
+                if self.x < tilex + 32 and self.x + 32 > tilex and self.y + 12 < tiley + 32 and self.y + 64 > tiley then
                     self.x = self.oldx
                 end
             end

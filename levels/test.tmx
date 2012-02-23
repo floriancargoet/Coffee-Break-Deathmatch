@@ -5,7 +5,7 @@
  </tileset>
  <layer name="tiles" width="27" height="24">
   <data encoding="base64" compression="zlib">
-   eJztltEOgCAIReH/f4pPq55qBMZFotZyYz4Inl1EhYmIGw0da4wkYh5nIfo3rmUIa2ZEWDNnqFlaH7pvJFeD2BIdAY50cA68dtafw3nWW3PI+yxo3BXLexfRe22xit6ok+6v18bgb3H/IsBXLFa1PlU7qf4j6KPrNNXvBNatvsBl3WEL8X4jOQ==
+   eJztVkEKACAI0/9/umuEhNO1OiRIELqlZepm5kJFpepzmwuJP2u72+9IhqtzhxFuhF3B6PieFBXPyqfk+jnsc72aQ19WlC97ptkerevIhvlHsXFRfuXbYPQctBey42PMH1kbxrxTqRO1DmQlALk=
   </data>
  </layer>
  <objectgroup name="Spawns" width="27" height="24">
