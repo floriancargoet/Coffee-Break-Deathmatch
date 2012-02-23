@@ -7,7 +7,14 @@ game.keys = {}
 -- Executed at startup
 function game:load()
     self.map = ATL.Loader.load('test.tmx')
-    local playerent = self.map.ol["Players"]:newObject("player", "Entity", 0, 0, 32, 64)
+    self:spawnPlayer()
+end
+
+function game:spawnPlayer()
+    local spawnIndex = math.random(#self.map.ol['Spawns'].objects)
+    print(spawnIndex)
+    local spawnPoint = self.map.ol['Spawns'].objects[spawnIndex]
+    local playerent = self.map.ol['Players']:newObject('player', 'Entity', spawnPoint.x, spawnPoint.y, 32, 64)
     local player = Player:new(playerent)
     
     self.player = player
@@ -39,6 +46,9 @@ end
 
 function game:keypressed(key)
     self.keys[key] = true
+    if key == ' ' then
+        self.player:jump()
+    end
 end
 
 function game:keyreleased(key)

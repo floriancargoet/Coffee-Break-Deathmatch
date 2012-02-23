@@ -18,6 +18,7 @@ local game = require 'game'
 
 -- Executed at startup
 function love.load()
+    math.randomseed(os.time())
     game:load()
 end
 

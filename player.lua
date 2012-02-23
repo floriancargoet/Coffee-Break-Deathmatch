@@ -3,10 +3,11 @@ require 'lib/middleclass'
 Player = class('Player')
 
 function Player:initialize(entity)
-    self.x = 220
-    self.y = 150
+    self.x = entity.x
+    self.y = entity.y
     self.vx = 0
     self.vy = 0
+    self.canJump = true
     self.entity = entity
 
     self.img = love.graphics.newImage('img/player.png')
@@ -73,6 +74,7 @@ function Player:updatePhysics(dt, tiles)
     if self:isOnGround(tiles) then
         self.inAir = false
         self.vy = 0
+        self.canJump = true
     else
         self.inAir = true
     end
@@ -95,9 +97,10 @@ function Player:stopMoving()
 end
 
 function Player:jump()
-    if not self.inAir then
-        self.vy = -800
+    if self.canJump then
+        self.vy = -1000
         self.inAir = true
+        self.canJump = false
     end
 end
 
