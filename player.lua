@@ -21,6 +21,9 @@ function Player:initialize(entity)
         this:draw()
     end
 
+    self.crosshairX = 0
+    self.crosshairY = 0
+
 end
 
 function Player:draw()
@@ -144,4 +147,6 @@ function Player:updateCrosshair(mouseX, mouseY)
     -- store coordinates, the crosshair will be drawn in draw()
     self.crosshairX = x
     self.crosshairY = y
+
+    --love.mouse.setPosition(self.crosshairX, self.crosshairY)
 end

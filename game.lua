@@ -1,8 +1,12 @@
 require 'player'
+require 'projectile'
+require 'explosion'
 
 local game = {}
 
 game.keys = {}
+game.projectiles = {}
+game.explosions = {}
 
 -- Executed at startup
 function game:load()
@@ -19,8 +23,49 @@ function game:spawnPlayer()
     self.player = player
 end
 
+function game:createProjectile(x, y, angle, speed)
+    local projectile = Projectile:new(x, y, angle, speed)
+    table.insert(self.projectiles, projectile)
+end
+
+function game:updateProjectiles(dt, tiles)
+    local toRemove = {}
+    for i, projectile in ipairs(self.projectiles) do
+        projectile:update(dt, tiles)
+        if not projectile.alive then
+            table.insert(toRemove, i)
+            local explosion = Explosion:new(projectile.x, projectile.y)
+            table.insert(self.explosions, explosion)
+        end
+    end
+
+    for i, projectile in ipairs(toRemove) do
+        table.remove(self.projectiles, projectile)
+    end
+end
+
+function game:updateExplosions(dt, tiles)
+    local toRemove = {}
+    for i, explosion in ipairs(self.explosions) do
+        explosion:update(dt, tiles)
+        if not explosion.alive then
+            table.insert(toRemove, i)
+        end
+    end
+
+    for i, explosion in ipairs(toRemove) do
+        table.remove(self.explosions, explosion)
+    end
+end
+
 -- Executed each step
 function game:update(dt)
+
+    local tiles = self.map.tl['tiles'].tileData
+
+    self:updateProjectiles(dt, tiles)
+    self:updateExplosions(dt, tiles)
+
     local p = self.player
     local k = self.keys
 
@@ -38,7 +83,7 @@ function game:update(dt)
         p:jump()
     end
     
-    p:updatePhysics(dt, self.map.tl['tiles'].tileData)
+    p:updatePhysics(dt, tiles)
     p:updateCrosshair(love.mouse.getPosition())
     p:updateDrawInfo() -- for drawRange optimizations
 end
@@ -58,6 +103,11 @@ function game:keyreleased(key)
 end
 
 function game:mousepressed(x, y, button)
+    if button == 'l' then
+        local playerx, playery = self.player.x + self.player.w/2, self.player.y + self.player.h/2 -- center of the player
+        local angle = math.atan2((y-playery),(x-playerx))
+        self:createProjectile(playerx, playery, angle, 1000)
+    end
     if button == 'r' then
         self.player:jump()
     end
@@ -72,6 +122,12 @@ end
 -- Drawing operations
 function game:draw()
     self.map:draw()
+    for i, projectile in ipairs(self.projectiles) do
+        projectile:draw()
+    end
+    for i, explosion in ipairs(self.explosions) do
+        explosion:draw()
+    end
 end
 
 return game
