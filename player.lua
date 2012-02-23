@@ -32,11 +32,18 @@ function Player:draw()
     
     -- crosshair
     local r, g, b, a = love.graphics.getColor() -- backup color
-    love.graphics.setColor(255, 0, 0)
+    love.graphics.setColor(255, self.crosshairDispersion == 1 and 255 or 0, 0) -- yellow when max dispersion
     love.graphics.setLineWidth(2)
     local x, y = self.crosshairX, self.crosshairY
-    love.graphics.line(x - 4, y, x + 4, y)
-    love.graphics.line(x, y - 4, x, y + 4)
+    local d = math.floor(self.crosshairDispersion)
+    -- top
+    love.graphics.line(x, y + d + 4, x , y + d)
+    -- bottom
+    love.graphics.line(x, y - d - 4, x , y - d)
+    --left
+    love.graphics.line(x - d - 4, y, x - d, y)
+    --right
+    love.graphics.line(x + d + 4, y, x + d, y)
     love.graphics.setColor(r, g, b, a) -- restore color
 end
 
@@ -136,17 +143,21 @@ function Player:updateDrawInfo()
 end
 
 function Player:updateCrosshair(mouseX, mouseY)
-    -- crosshair is drawn at a fixed distance
-    local crosshairRadius = 100
+    -- options
+    local maxDist = 500           -- after maxDist, dispersion is maximal
+    local maxPixelDispersion = 30 -- dispersion is between 0 pixels and {maxPixelDispersion} pixels
+    
+    self.crosshairX = mouseX
+    self.crosshairY = mouseY
+    
     local x, y = self.x + self.w/2, self.y + self.h/2 -- center of the player
     local dx, dy = mouseX - x, mouseY - y
-    local d = math.sqrt(dx*dx + dy*dy) -- distance between player and mouse
-    -- force crosshair on a circle
-    x = x + (dx/d) * crosshairRadius
-    y = y + (dy/d) * crosshairRadius
-    -- store coordinates, the crosshair will be drawn in draw()
-    self.crosshairX = x
-    self.crosshairY = y
-
-    --love.mouse.setPosition(self.crosshairX, self.crosshairY)
+    local d = math.sqrt(dx*dx + dy*dy)                -- distance between player and mouse
+    
+    
+    if d > maxDist then
+        self.crosshairDispersion = maxPixelDispersion
+    else
+        self.crosshairDispersion = (d/maxDist) * maxPixelDispersion
+    end
 end

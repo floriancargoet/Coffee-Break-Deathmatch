@@ -103,13 +103,18 @@ function game:keyreleased(key)
 end
 
 function game:mousepressed(x, y, button)
+    local p = self.player
     if button == 'l' then
-        local playerx, playery = self.player.x + self.player.w/2, self.player.y + self.player.h/2 -- center of the player
-        local angle = math.atan2((y-playery),(x-playerx))
-        self:createProjectile(playerx, playery, angle, 1000)
+        local playerX, playerY = p.x + p.w/2, p.y + p.h/2 -- center of the player
+        local dispersion = p.crosshairDispersion * 2
+        local targetX = x + math.random(dispersion) - dispersion/2 -- anywhere in the crosshair
+        local targetY = y + math.random(dispersion) - dispersion/2
+        local angle = math.atan2((targetY - playerY),(targetX - playerX))
+        self:createProjectile(playerX, playerY, angle, 1000)
     end
+    
     if button == 'r' then
-        self.player:jump()
+        p:jump()
     end
 end
 

@@ -20,7 +20,7 @@ local game = require 'game'
 function love.load()
     math.randomseed(os.time())
     game:load()
-    --love.mouse.setVisible(false)
+    love.mouse.setVisible(false)
     love.mouse.setGrab(true)
 end
 
