@@ -158,6 +158,6 @@ function Player:updateCrosshair(mouseX, mouseY)
     if d > maxDist then
         self.crosshairDispersion = maxPixelDispersion
     else
-        self.crosshairDispersion = (d/maxDist) * maxPixelDispersion
+        self.crosshairDispersion = (d/maxDist) * (d/maxDist) * maxPixelDispersion
     end
 end

@@ -105,10 +105,16 @@ end
 function game:mousepressed(x, y, button)
     local p = self.player
     if button == 'l' then
-        local playerX, playerY = p.x + p.w/2, p.y + p.h/2 -- center of the player
+        local playerX, playerY = p.x + p.w/2, p.y + p.h/2   -- center of the player
         local dispersion = p.crosshairDispersion * 2
-        local targetX = x + math.random(dispersion) - dispersion/2 -- anywhere in the crosshair
-        local targetY = y + math.random(dispersion) - dispersion/2
+        local dispX, dispY = 0, 0
+        if dispersion > 1 then
+            dispX = math.random(dispersion) - dispersion/2  -- anywhere in the crosshair
+            dispY = math.random(dispersion) - dispersion/2
+        end
+        
+        local targetX = x + dispX
+        local targetY = y + dispY
         local angle = math.atan2((targetY - playerY),(targetX - playerX))
         self:createProjectile(playerX, playerY, angle, 1000)
     end
