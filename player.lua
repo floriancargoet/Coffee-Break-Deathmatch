@@ -30,8 +30,10 @@ function Player:draw()
     -- crosshair
     local r, g, b, a = love.graphics.getColor() -- backup color
     love.graphics.setColor(255, 0, 0)
-    love.graphics.setPointSize(2)
-    love.graphics.point(self.crosshairX, self.crosshairY)
+    love.graphics.setLineWidth(2)
+    local x, y = self.crosshairX, self.crosshairY
+    love.graphics.line(x - 4, y, x + 4, y)
+    love.graphics.line(x, y - 4, x, y + 4)
     love.graphics.setColor(r, g, b, a) -- restore color
 end
 
