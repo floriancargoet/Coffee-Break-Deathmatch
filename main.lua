@@ -42,6 +42,10 @@ function love.mousepressed(x, y, button)
     game:mousepressed(x, y, button)
 end
 
+function love.mousereleased(x, y, button)
+    game:mousereleased(x, y, button)
+end
+
 -- Drawing operations
 function love.draw()
     love.graphics.setBackgroundColor(50, 50, 50)

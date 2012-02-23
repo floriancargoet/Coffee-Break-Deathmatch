@@ -13,9 +13,9 @@ end
 function game:spawnPlayer()
     local spawnIndex = math.random(#self.map.ol['Spawns'].objects)
     local spawnPoint = self.map.ol['Spawns'].objects[spawnIndex]
-    local playerent = self.map.ol['Players']:newObject('player', 'Entity', spawnPoint.x, spawnPoint.y, 32, 64)
-    local player = Player:new(playerent)
-    
+    local playerEnt = self.map.ol['Players']:newObject('player', 'Entity', spawnPoint.x, spawnPoint.y, 32, 64)
+    local player = Player:new(playerEnt)
+
     self.player = player
 end
 
@@ -24,13 +24,13 @@ function game:update(dt)
     local p = self.player
     local k = self.keys
 
-    if k.left then
+    if k.left or k.q then
         p:moveLeft()
     end
-    if k.right then
+    if k.right or k.d then
         p:moveRight()
     end
-    if not (k.left or k.right) then
+    if not (k.left or k.right or k.q or k.d) then
         p:stopMoving()
     end
     
@@ -45,20 +45,28 @@ end
 
 function game:keypressed(key)
     self.keys[key] = true
-    if key == ' ' then
+    if key == ' ' or key == 'z' then
         self.player:jump()
     end
 end
 
 function game:keyreleased(key)
     self.keys[key] = false
-    if key == ' ' then
+    if key == ' ' or key == 'z' then
         self.player:stopJump()
     end
 end
 
 function game:mousepressed(x, y, button)
+    if button == 'r' then
+        self.player:jump()
+    end
+end
 
+function game:mousereleased(x, y, button)
+    if button == 'r' then
+        self.player:stopJump()
+    end
 end
 
 -- Drawing operations
