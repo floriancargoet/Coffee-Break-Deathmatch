@@ -39,7 +39,7 @@ function game:update(dt)
     end
     
     p:updatePhysics(dt, self.map.tl['tiles'].tileData)
-    
+    p:updateCrosshair(love.mouse.getPosition())
     p:updateDrawInfo() -- for drawRange optimizations
 end
 

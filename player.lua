@@ -3,8 +3,12 @@ require 'lib/middleclass'
 global.Player = class('Player')
 
 function Player:initialize(entity)
+    -- copy some properties
     self.x = entity.x
     self.y = entity.y
+    self.w = entity.width
+    self.h = entity.height
+    
     self.vx = 0
     self.vy = 0
     self.canJump = true
@@ -12,12 +16,24 @@ function Player:initialize(entity)
 
     self.img = love.graphics.newImage('img/player.png')
     
+    local this = self
     self.entity.draw = function()
-        love.graphics.draw(self.img, self.entity.x, self.entity.y)
+        this:draw()
     end
 
 end
 
+function Player:draw()
+    -- player sprite
+    love.graphics.draw(self.img, self.entity.x, self.entity.y)
+    
+    -- crosshair
+    local r, g, b, a = love.graphics.getColor() -- backup color
+    love.graphics.setColor(255, 0, 0)
+    love.graphics.setPointSize(2)
+    love.graphics.point(self.crosshairX, self.crosshairY)
+    love.graphics.setColor(r, g, b, a) -- restore color
+end
 
 function Player:bumpInWalls(tiles)
     for j, temp in ipairs(tiles) do
@@ -112,4 +128,18 @@ end
 
 function Player:updateDrawInfo()
     self.entity:updateDrawInfo()
+end
+
+function Player:updateCrosshair(mouseX, mouseY)
+    -- crosshair is drawn at a fixed distance
+    local crosshairRadius = 100
+    local x, y = self.x + self.w/2, self.y + self.h/2 -- center of the player
+    local dx, dy = mouseX - x, mouseY - y
+    local d = math.sqrt(dx*dx + dy*dy) -- distance between player and mouse
+    -- force crosshair on a circle
+    x = x + (dx/d) * crosshairRadius
+    y = y + (dy/d) * crosshairRadius
+    -- store coordinates, the crosshair will be drawn in draw()
+    self.crosshairX = x
+    self.crosshairY = y
 end
