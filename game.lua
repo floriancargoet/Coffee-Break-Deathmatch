@@ -12,7 +12,6 @@ end
 
 function game:spawnPlayer()
     local spawnIndex = math.random(#self.map.ol['Spawns'].objects)
-    print(spawnIndex)
     local spawnPoint = self.map.ol['Spawns'].objects[spawnIndex]
     local playerent = self.map.ol['Players']:newObject('player', 'Entity', spawnPoint.x, spawnPoint.y, 32, 64)
     local player = Player:new(playerent)

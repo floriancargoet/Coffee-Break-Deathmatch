@@ -1,6 +1,6 @@
 require 'lib/middleclass'
 
-Player = class('Player')
+global.Player = class('Player')
 
 function Player:initialize(entity)
     self.x = entity.x
@@ -41,7 +41,7 @@ function Player:isOnGround(tiles)
                 local tilex = (i-1)*32
                 local tiley = (j-1)*32
                 
-                if self.x < tilex + 30 and self.x + 30 > tilex and self.y + 64 < tiley + 32 and self.y + 64 >= tiley then
+                if self.x + 2 < tilex + 32 and self.x + 30 > tilex and self.y + 64 < tiley + 32 and self.y + 64 >= tiley then
                     -- we adjust the y position
                     self.y = tiley - 64
                     return true
