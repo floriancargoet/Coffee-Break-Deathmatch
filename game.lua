@@ -53,6 +53,9 @@ end
 
 function game:keyreleased(key)
     self.keys[key] = false
+    if key == ' ' then
+        self.player:stopJump()
+    end
 end
 
 function game:mousepressed(x, y, button)

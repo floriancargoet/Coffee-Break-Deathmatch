@@ -41,7 +41,7 @@ function Player:isOnGround(tiles)
                 local tilex = (i-1)*32
                 local tiley = (j-1)*32
                 
-                if self.x < tilex + 32 and self.x + 32 >= tilex and self.y + 64 < tiley + 32 and self.y + 64 >= tiley then
+                if self.x < tilex + 30 and self.x + 30 > tilex and self.y + 64 < tiley + 32 and self.y + 64 >= tiley then
                     -- we adjust the y position
                     self.y = tiley - 64
                     return true
@@ -59,9 +59,9 @@ function Player:updatePhysics(dt, tiles)
     
     -- if falling or jumping
     if self.inAir then
-        self.vy = self.vy + 4000*dt
-        if self.vy > 800 then
-            self.vy = 800
+        self.vy = self.vy + 1500*dt
+        if self.vy > 600 then
+            self.vy = 600
         end
     end
     
@@ -98,9 +98,15 @@ end
 
 function Player:jump()
     if self.canJump then
-        self.vy = -1000
+        self.vy = -600
         self.inAir = true
         self.canJump = false
+    end
+end
+
+function Player:stopJump()
+    if self.vy < -300 then
+        self.vy = -300
     end
 end
 
