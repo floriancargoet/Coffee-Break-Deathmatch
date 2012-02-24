@@ -3,12 +3,10 @@ require 'lib/middleclass'
 global.TimedObject = class('TimedObject')
 
 function TimedObject:initialize(x, y, ttl)
-    -- copy some properties
     self.x = x
     self.y = y
     self.alive = true
     self.ttl = ttl
-
 end
 
 function TimedObject:update(dt, tiles)

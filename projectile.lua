@@ -8,7 +8,7 @@ function Projectile:initialize(x, y, angle, speed)
     self.angle = angle
     self.speed = speed
 
-    self.img = img or love.graphics.newImage('img/bullet.tga')
+    self.img = love.graphics.newImage('img/bullet.tga')
 
 end
 
