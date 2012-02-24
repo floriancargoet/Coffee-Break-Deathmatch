@@ -14,7 +14,7 @@ setmetatable(_G, {__newindex = function(t,k,v)
 end})
 --
 
-local game = require 'game'
+global game = require 'game'
 
 -- Executed at startup
 function love.load()

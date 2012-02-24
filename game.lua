@@ -5,8 +5,7 @@ require 'explosion'
 local game = {}
 
 game.keys = {}
-game.projectiles = {}
-game.explosions = {}
+game.timedObjects = {}
 
 -- Executed at startup
 function game:load()
@@ -25,36 +24,26 @@ end
 
 function game:createProjectile(x, y, angle, speed)
     local projectile = Projectile:new(x, y, angle, speed)
-    table.insert(self.projectiles, projectile)
+    table.insert(self.timedObjects, projectile)
 end
 
-function game:updateProjectiles(dt, tiles)
+function game:createExplosion(x, y)
+    local explosion = Explosion:new(x, y)
+    table.insert(self.timedObjects, explosion)
+end
+
+function game:updateTimedObjects(dt, tiles)
     local toRemove = {}
-    for i, projectile in ipairs(self.projectiles) do
-        projectile:update(dt, tiles)
-        if not projectile.alive then
+    for i, object in ipairs(self.timedObjects) do
+        object:update(dt, tiles)
+        if not object.alive then
             table.insert(toRemove, i)
-            local explosion = Explosion:new(projectile.x, projectile.y)
-            table.insert(self.explosions, explosion)
+            object:kill()
         end
     end
 
-    for i, projectile in ipairs(toRemove) do
-        table.remove(self.projectiles, projectile)
-    end
-end
-
-function game:updateExplosions(dt, tiles)
-    local toRemove = {}
-    for i, explosion in ipairs(self.explosions) do
-        explosion:update(dt, tiles)
-        if not explosion.alive then
-            table.insert(toRemove, i)
-        end
-    end
-
-    for i, explosion in ipairs(toRemove) do
-        table.remove(self.explosions, explosion)
+    for i, object in ipairs(toRemove) do
+        table.remove(self.timedObjects, object)
     end
 end
 
@@ -63,8 +52,7 @@ function game:update(dt)
 
     local tiles = self.map.tl['tiles'].tileData
 
-    self:updateProjectiles(dt, tiles)
-    self:updateExplosions(dt, tiles)
+    self:updateTimedObjects(dt, tiles)
 
     local p = self.player
     local k = self.keys
@@ -105,18 +93,7 @@ end
 function game:mousepressed(x, y, button)
     local p = self.player
     if button == 'l' then
-        local playerX, playerY = p.x + p.w/2, p.y + p.h/2   -- center of the player
-        local dispersion = p.crosshairDispersion * 2
-        local dispX, dispY = 0, 0
-        if dispersion > 1 then
-            dispX = math.random(dispersion) - dispersion/2  -- anywhere in the crosshair
-            dispY = math.random(dispersion) - dispersion/2
-        end
-        
-        local targetX = x + dispX
-        local targetY = y + dispY
-        local angle = math.atan2((targetY - playerY),(targetX - playerX))
-        self:createProjectile(playerX, playerY, angle, 1000)
+        p:shoot(x, y)
     end
     
     if button == 'r' then
@@ -133,11 +110,8 @@ end
 -- Drawing operations
 function game:draw()
     self.map:draw()
-    for i, projectile in ipairs(self.projectiles) do
-        projectile:draw()
-    end
-    for i, explosion in ipairs(self.explosions) do
-        explosion:draw()
+    for i, object in ipairs(self.timedObjects) do
+        object:draw()
     end
 end
 

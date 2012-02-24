@@ -1,21 +1,20 @@
 require 'lib/middleclass'
+require 'timedObject'
 
-global.Projectile = class('Projectile')
+global.Projectile = class('Projectile', TimedObject)
 
 function Projectile:initialize(x, y, angle, speed)
-    -- copy some properties
-    self.x = x
-    self.y = y
+    TimedObject.initialize(self, x, y, 1)
     self.angle = angle
     self.speed = speed
-    self.alive = true
-    self.ttl = 1
 
     self.img = img or love.graphics.newImage('img/bullet.tga')
 
 end
 
 function Projectile:update(dt, tiles)
+    TimedObject.update(self, dt, tiles)
+
     -- projectile update
     local vx = self.speed * math.cos(self.angle)
     local vy = self.speed * math.sin(self.angle)
@@ -35,11 +34,10 @@ function Projectile:update(dt, tiles)
         end
     end
 
-    self.ttl = self.ttl - (1 * dt)
-    if self.ttl < 0 then
-        self.alive = false
-    end
+end
 
+function Projectile:kill()
+    game:createExplosion(self.x, self.y)
 end
 
 function Projectile:draw()

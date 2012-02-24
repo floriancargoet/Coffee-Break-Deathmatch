@@ -8,7 +8,7 @@ function Player:initialize(entity)
     self.y = entity.y
     self.w = entity.width
     self.h = entity.height
-    
+
     self.vx = 0
     self.vy = 0
     self.canJump = true
@@ -29,7 +29,7 @@ end
 function Player:draw()
     -- player sprite
     love.graphics.draw(self.img, self.entity.x, self.entity.y)
-    
+
     -- crosshair
     local r, g, b, a = love.graphics.getColor() -- backup color
     love.graphics.setColor(255, self.crosshairDispersion == 1 and 255 or 0, 0) -- yellow when max dispersion
@@ -84,7 +84,7 @@ function Player:updatePhysics(dt, tiles)
 
     self.oldx = self.x
     self.oldy = self.y
-    
+
     -- if falling or jumping
     if self.inAir then
         self.vy = self.vy + 1500*dt
@@ -92,10 +92,10 @@ function Player:updatePhysics(dt, tiles)
             self.vy = 600
         end
     end
-    
+
     self.x = self.x + self.vx*dt
     self.y = self.y + self.vy*dt
-    
+
     self:bumpInWalls(tiles)
 
     -- checking for ground
@@ -142,19 +142,34 @@ function Player:updateDrawInfo()
     self.entity:updateDrawInfo()
 end
 
+function Player:shoot(targetX, targetY)
+    local playerX, playerY = self.x + self.w/2, self.y + self.h/2   -- center of the player
+    local dispersion = self.crosshairDispersion * 2
+    local dispX, dispY = 0, 0
+    if dispersion > 1 then
+        dispX = math.random(dispersion) - dispersion/2  -- anywhere in the crosshair
+        dispY = math.random(dispersion) - dispersion/2
+    end
+
+    local hitX = targetX + dispX
+    local hitY = targetY + dispY
+    local angle = math.atan2((hitY - playerY),(hitX - playerX))
+    game:createProjectile(playerX, playerY, angle, 1000)
+end
+
 function Player:updateCrosshair(mouseX, mouseY)
     -- options
     local maxDist = 500           -- after maxDist, dispersion is maximal
     local maxPixelDispersion = 30 -- dispersion is between 0 pixels and {maxPixelDispersion} pixels
-    
+
     self.crosshairX = mouseX
     self.crosshairY = mouseY
-    
+
     local x, y = self.x + self.w/2, self.y + self.h/2 -- center of the player
     local dx, dy = mouseX - x, mouseY - y
     local d = math.sqrt(dx*dx + dy*dy)                -- distance between player and mouse
-    
-    
+
+
     if d > maxDist then
         self.crosshairDispersion = maxPixelDispersion
     else
