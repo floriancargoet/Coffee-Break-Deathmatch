@@ -21,7 +21,7 @@ function love.load()
     math.randomseed(os.time())
     game:load()
     love.mouse.setVisible(false)
-    love.mouse.setGrab(true)
+    --love.mouse.setGrab(true)
 end
 
 -- Executed each step
