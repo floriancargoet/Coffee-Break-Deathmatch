@@ -15,6 +15,8 @@ function game:load()
     self:spawnPlayer()
     self:spawnArmor()
     self.mainCamera = camera()
+    self.mainCamera.limit_x = self.map.tileWidth*self.map.width
+    self.mainCamera.limit_y = self.map.tileHeight*self.map.height
 end
 
 function game:spawnPlayer()
@@ -133,6 +135,14 @@ function game:mousepressed(x, y, button)
     if button == 'r' then
         p:jump()
     end
+
+    if button == "wu" then
+        self.mainCamera.zoom = self.mainCamera.zoom + 0.1
+    end
+    if button == "wd" then
+        self.mainCamera.zoom = self.mainCamera.zoom - 0.1
+    end
+
 end
 
 function game:mousereleased(x, y, button)
@@ -142,10 +152,11 @@ function game:mousereleased(x, y, button)
 end
 
 function game:updateCamera()
-
     local cam = self.mainCamera
+
     local offsetX = self.player.x - cam.pos.x
     local offsetY = self.player.y - cam.pos.y
+
     -- We let a small zone in which we can move without moving the camera
     local cameraEyeX = 100
     local cameraEyeY = 50
@@ -164,6 +175,23 @@ function game:updateCamera()
         offsetY = 0
     end
     cam:move(offsetX, offsetY)
+
+    local originX = cam:worldCoords(0,0).x
+    local originY = cam:worldCoords(0,0).y
+
+    if originX < 0 then
+        cam.pos.x = cam.pos.x-originX
+    end
+    if originY < 0 then
+        cam.pos.y = cam.pos.y-originY
+    end
+    if cam:worldCoords(love.graphics.getWidth(), love.graphics.getHeight()).x > cam.limit_x then
+        cam.pos.x = cam.limit_x-(cam.pos.x-originX)
+    end
+    if cam:worldCoords(love.graphics.getWidth(), love.graphics.getHeight()).y > cam.limit_y then
+        cam.pos.y = cam.limit_y-(cam.pos.y-originY)
+    end
+
 end
 
 -- Drawing operations
