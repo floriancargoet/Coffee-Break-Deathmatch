@@ -3,15 +3,20 @@ require 'lib/middleclass'
 global.Costume = class('Costume')
 
 function Costume:initialize()
+    -- physics
     self.moveSpeed = 250
     self.jumpSpeed = 600
-    self.gravity = 1500
+    self.gravity   = 1500
     
-    self.distanceShootDispersion = 500
-    self.maxShootDispersion = 30
-    self.ttl = math.huge
+    -- shooting
+    self.maxDistanceShootDispersion = 500 -- after this distance (pixels), dispersion doesn't increase anymore
+    self.maxShootDispersion = 30          -- maximum size of the crosshair
     
+    -- display
     self.image = love.graphics.newImage('img/player.png')
+    
+    -- other
+    self.ttl = math.huge -- time after which the costume is lost
 end
 
 function Costume:update(dt)

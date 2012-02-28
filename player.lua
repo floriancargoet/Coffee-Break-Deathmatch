@@ -169,7 +169,7 @@ end
 
 function Player:updateCrosshair(mouseX, mouseY)
     -- options
-    local maxDist = self.costume.distanceShootDispersion       -- after maxDist, dispersion is maximal
+    local maxDist = self.costume.maxDistanceShootDispersion    -- after maxDist, dispersion is maximal
     local maxPixelDispersion = self.costume.maxShootDispersion -- dispersion is between 0 pixels and {maxPixelDispersion} pixels
 
     self.crosshairX = mouseX
