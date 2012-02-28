@@ -29,7 +29,6 @@ function Player:initialize(entity)
 end
 
 function Player:draw()
-    love.graphics.print('Costume time: ' .. self.costume.ttl, 0, 20)
     -- player sprite
     love.graphics.draw(self.costume.image, self.entity.x, self.entity.y)
 

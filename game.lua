@@ -2,6 +2,7 @@ require 'player'
 require 'projectile'
 require 'explosion'
 require 'armor_item'
+local camera = require 'lib/camera'
 
 local game = {}
 
@@ -13,6 +14,7 @@ function game:load()
     self.map = ATL.Loader.load('test.tmx')
     self:spawnPlayer()
     self:spawnArmor()
+    self.mainCamera = camera()
 end
 
 function game:spawnPlayer()
@@ -98,7 +100,7 @@ function game:update(dt)
 
     self:checkForItems(self.player)
     p:updatePhysics(dt, tiles)
-    p:updateCrosshair(love.mouse.getPosition())
+    p:updateCrosshair(self.mainCamera:mousepos().x, self.mainCamera:mousepos().y)
     p:updateDrawInfo() -- for drawRange optimizations
 end
 
@@ -120,6 +122,9 @@ function game:keyreleased(key)
 end
 
 function game:mousepressed(x, y, button)
+
+    x, y = self.mainCamera:mousepos().x, self.mainCamera:mousepos().y
+
     local p = self.player
     if button == 'l' then
         p:shoot(x, y)
@@ -136,12 +141,44 @@ function game:mousereleased(x, y, button)
     end
 end
 
+function game:updateCamera()
+
+    local cam = self.mainCamera
+    local offsetX = self.player.x - cam.pos.x
+    local offsetY = self.player.y - cam.pos.y
+    -- We let a small zone in which we can move without moving the camera
+    local cameraEyeX = 100
+    local cameraEyeY = 50
+    if (offsetX > cameraEyeX) then
+        offsetX = offsetX - cameraEyeX
+    elseif (offsetX < -cameraEyeX) then
+        offsetX = offsetX + cameraEyeX
+    else
+        offsetX = 0
+    end
+    if (offsetY > cameraEyeY) then
+        offsetY = offsetY - cameraEyeY
+    elseif (offsetY < -cameraEyeY) then
+        offsetY = offsetY + cameraEyeY
+    else
+        offsetY = 0
+    end
+    cam:move(offsetX, offsetY)
+end
+
 -- Drawing operations
 function game:draw()
+
+    self:updateCamera()
+
+    self.mainCamera:attach()
     self.map:draw()
     for i, object in ipairs(self.timedObjects) do
         object:draw()
     end
+    self.mainCamera:detach()
+    -- HUD
+    love.graphics.print('Costume time left : ' .. math.ceil(self.player.costume.ttl) .. ' seconds', 0, 20)
 end
 
 return game
