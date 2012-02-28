@@ -1,6 +1,7 @@
 require 'player'
 require 'projectile'
 require 'explosion'
+require 'armor_item'
 
 local game = {}
 
@@ -11,6 +12,7 @@ game.timedObjects = {}
 function game:load()
     self.map = ATL.Loader.load('test.tmx')
     self:spawnPlayer()
+    self:spawnArmor()
 end
 
 function game:spawnPlayer()
@@ -22,6 +24,14 @@ function game:spawnPlayer()
     self.player = player
 end
 
+function game:spawnArmor()
+    local spawnIndex = math.random(#self.map.ol['Spawns'].objects)
+    local spawnPoint = self.map.ol['Spawns'].objects[spawnIndex]
+    local armorEnt = self.map.ol['Items']:newObject('item', 'Entity', spawnPoint.x, spawnPoint.y+32, 32, 32)
+    local armor = ArmorItem:new(armorEnt)
+    armorEnt.refObject = armor
+end
+
 function game:createProjectile(x, y, angle, speed)
     local projectile = Projectile:new(x, y, angle, speed)
     table.insert(self.timedObjects, projectile)
@@ -30,6 +40,21 @@ end
 function game:createExplosion(x, y)
     local explosion = Explosion:new(x, y)
     table.insert(self.timedObjects, explosion)
+end
+
+function game:checkForItems(player)
+    local toRemove = {}
+    for i, itemObj in ipairs(self.map.ol['Items'].objects) do
+        local item = itemObj.refObject
+        if player.x < item.x + item.w and player.x + player.w > item.x and player.y + 12 < item.y + item.h and player.y + player.h > item.y then
+            item:applyEffect(player)
+            table.insert(toRemove, i)
+        end
+    end
+
+    for i, object in ipairs(toRemove) do
+        table.remove(self.map.ol['Items'].objects, object)
+    end
 end
 
 function game:updateTimedObjects(dt, tiles)
@@ -70,7 +95,8 @@ function game:update(dt)
     if k.up then
         p:jump()
     end
-    
+
+    self:checkForItems(self.player)
     p:updatePhysics(dt, tiles)
     p:updateCrosshair(love.mouse.getPosition())
     p:updateDrawInfo() -- for drawRange optimizations

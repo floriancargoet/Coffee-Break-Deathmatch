@@ -1,5 +1,5 @@
 require 'lib/middleclass'
-require 'armor'
+require 'costume'
 
 global.Player = class('Player')
 
@@ -17,8 +17,6 @@ function Player:initialize(entity)
 
     self.default_costume = Costume:new()
     self.costume = self.default_costume
-
-    self.img = self.costume.image
     
     local this = self
     self.entity.draw = function()
@@ -33,7 +31,7 @@ end
 function Player:draw()
     love.graphics.print('Costume time: ' .. self.costume.ttl, 0, 20)
     -- player sprite
-    love.graphics.draw(self.img, self.entity.x, self.entity.y)
+    love.graphics.draw(self.costume.image, self.entity.x, self.entity.y)
 
     -- crosshair
     local r, g, b, a = love.graphics.getColor() -- backup color
@@ -88,6 +86,9 @@ end
 function Player:updatePhysics(dt, tiles)
 
     self.costume:update(dt)
+    if (self.costume.ttl == 0) then
+        self.costume = self.default_costume
+    end
 
     self.oldx = self.x
     self.oldy = self.y
