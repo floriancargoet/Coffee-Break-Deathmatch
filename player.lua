@@ -1,4 +1,5 @@
 require 'lib/middleclass'
+require 'armor'
 
 global.Player = class('Player')
 
@@ -14,7 +15,10 @@ function Player:initialize(entity)
     self.canJump = true
     self.entity = entity
 
-    self.img = love.graphics.newImage('img/player.png')
+    self.default_costume = Costume:new()
+    self.costume = self.default_costume
+
+    self.img = self.costume.image
     
     local this = self
     self.entity.draw = function()
@@ -27,6 +31,7 @@ function Player:initialize(entity)
 end
 
 function Player:draw()
+    love.graphics.print('Costume time: ' .. self.costume.ttl, 0, 20)
     -- player sprite
     love.graphics.draw(self.img, self.entity.x, self.entity.y)
 
@@ -82,12 +87,14 @@ end
 
 function Player:updatePhysics(dt, tiles)
 
+    self.costume:update(dt)
+
     self.oldx = self.x
     self.oldy = self.y
 
     -- if falling or jumping
     if self.inAir then
-        self.vy = self.vy + 1500*dt
+        self.vy = self.vy + self.costume.gravity*dt
         if self.vy > 600 then
             self.vy = 600
         end
@@ -113,11 +120,11 @@ function Player:updatePhysics(dt, tiles)
 end
 
 function Player:moveLeft()
-    self.vx = -250
+    self.vx = -self.costume.move_speed
 end
 
 function Player:moveRight()
-    self.vx = 250
+    self.vx = self.costume.move_speed
 end
 
 function Player:stopMoving()
@@ -126,15 +133,16 @@ end
 
 function Player:jump()
     if self.canJump then
-        self.vy = -600
+        self.vy = -self.costume.jump_speed
         self.inAir = true
         self.canJump = false
     end
 end
 
 function Player:stopJump()
-    if self.vy < -300 then
-        self.vy = -300
+    local min_jump_speed = self.costume.jump_speed / 2
+    if self.vy < -min_jump_speed then
+        self.vy = -min_jump_speed
     end
 end
 
@@ -159,8 +167,8 @@ end
 
 function Player:updateCrosshair(mouseX, mouseY)
     -- options
-    local maxDist = 500           -- after maxDist, dispersion is maximal
-    local maxPixelDispersion = 30 -- dispersion is between 0 pixels and {maxPixelDispersion} pixels
+    local maxDist = self.costume.distance_shoot_dispersion           -- after maxDist, dispersion is maximal
+    local maxPixelDispersion = self.costume.max_shoot_dispersion -- dispersion is between 0 pixels and {maxPixelDispersion} pixels
 
     self.crosshairX = mouseX
     self.crosshairY = mouseY
