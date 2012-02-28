@@ -6,7 +6,7 @@ global.Explosion = class('Explosion', TimedObject)
 function Explosion:initialize(x, y)
     TimedObject.initialize(self, x, y, 0.1)
 
-    self.img = img or love.graphics.newImage('img/explosion.tga')
+    self.img = love.graphics.newImage('img/explosion.tga')
 
 end
 

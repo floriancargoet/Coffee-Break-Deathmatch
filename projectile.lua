@@ -16,18 +16,18 @@ function Projectile:update(dt, tiles)
     TimedObject.update(self, dt, tiles)
 
     -- projectile update
-    local vx = self.speed * math.cos(self.angle)
-    local vy = self.speed * math.sin(self.angle)
-    self.x = self.x + vx*dt
-    self.y = self.y + vy*dt
+    local speedX = self.speed * math.cos(self.angle)
+    local speedY = self.speed * math.sin(self.angle)
+    self.x = self.x + speedX * dt
+    self.y = self.y + speedY * dt
 
     for j, temp in ipairs(tiles) do
         for i, tile in ipairs(temp) do
             if tile ~= 0 then
-                local tilex = (i-1)*32
-                local tiley = (j-1)*32
+                local tileX = (i-1)*32
+                local tileY = (j-1)*32
 
-                if self.x + 2 < tilex + 32 and self.x + 2 > tilex and self.y + 2 < tiley + 32 and self.y + 2 > tiley then
+                if self.x + 2 < tileX + 32 and self.x + 2 > tileX and self.y + 2 < tileY + 32 and self.y + 2 > tileY then
                     self.alive = false
                 end
             end

@@ -18,8 +18,8 @@ end
 function game:spawnPlayer()
     local spawnIndex = math.random(#self.map.ol['Spawns'].objects)
     local spawnPoint = self.map.ol['Spawns'].objects[spawnIndex]
-    local playerEnt = self.map.ol['Players']:newObject('player', 'Entity', spawnPoint.x, spawnPoint.y, 32, 64)
-    local player = Player:new(playerEnt)
+    local playerEntity = self.map.ol['Players']:newObject('player', 'Entity', spawnPoint.x, spawnPoint.y, 32, 64)
+    local player = Player:new(playerEntity)
 
     self.player = player
 end
@@ -27,9 +27,9 @@ end
 function game:spawnArmor()
     local spawnIndex = math.random(#self.map.ol['Spawns'].objects)
     local spawnPoint = self.map.ol['Spawns'].objects[spawnIndex]
-    local armorEnt = self.map.ol['Items']:newObject('item', 'Entity', spawnPoint.x, spawnPoint.y+32, 32, 32)
-    local armor = ArmorItem:new(armorEnt)
-    armorEnt.refObject = armor
+    local armorEntity = self.map.ol['Items']:newObject('item', 'Entity', spawnPoint.x, spawnPoint.y+32, 32, 32)
+    local armor = ArmorItem:new(armorEntity)
+    armorEntity.refObject = armor
 end
 
 function game:createProjectile(x, y, angle, speed)

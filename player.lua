@@ -10,13 +10,13 @@ function Player:initialize(entity)
     self.w = entity.width
     self.h = entity.height
 
-    self.vx = 0
-    self.vy = 0
+    self.speedX = 0
+    self.speedY = 0
     self.canJump = true
     self.entity = entity
 
-    self.default_costume = Costume:new()
-    self.costume = self.default_costume
+    self.defaultCostume = Costume:new()
+    self.costume = self.defaultCostume
     
     local this = self
     self.entity.draw = function()
@@ -54,11 +54,11 @@ function Player:bumpInWalls(tiles)
     for j, temp in ipairs(tiles) do
         for i, tile in ipairs(temp) do
             if tile ~= 0 then
-                local tilex = (i-1)*32
-                local tiley = (j-1)*32
+                local tileX = (i-1)*32
+                local tileY = (j-1)*32
                 
-                if self.x < tilex + 32 and self.x + 32 > tilex and self.y + 12 < tiley + 32 and self.y + 64 > tiley then
-                    self.x = self.oldx
+                if self.x < tileX + 32 and self.x + 32 > tileX and self.y + 12 < tileY + 32 and self.y + 64 > tileY then
+                    self.x = self.oldX
                 end
             end
         end
@@ -69,12 +69,12 @@ function Player:isOnGround(tiles)
     for j, temp in ipairs(tiles) do
         for i, tile in ipairs(temp) do
             if tile ~= 0 then
-                local tilex = (i-1)*32
-                local tiley = (j-1)*32
+                local tileX = (i-1)*32
+                local tileY = (j-1)*32
                 
-                if self.x + 2 < tilex + 32 and self.x + 30 > tilex and self.y + 64 < tiley + 32 and self.y + 64 >= tiley then
+                if self.x + 2 < tileX + 32 and self.x + 30 > tileX and self.y + 64 < tileY + 32 and self.y + 64 >= tileY then
                     -- we adjust the y position
-                    self.y = tiley - 64
+                    self.y = tileY - 64
                     return true
                 end
             end
@@ -87,29 +87,29 @@ function Player:updatePhysics(dt, tiles)
 
     self.costume:update(dt)
     if (self.costume.ttl == 0) then
-        self.costume = self.default_costume
+        self.costume = self.defaultCostume
     end
 
-    self.oldx = self.x
-    self.oldy = self.y
+    self.oldX = self.x
+    self.oldY = self.y
 
     -- if falling or jumping
     if self.inAir then
-        self.vy = self.vy + self.costume.gravity*dt
-        if self.vy > 600 then
-            self.vy = 600
+        self.speedY = self.speedY + self.costume.gravity * dt
+        if self.speedY > 600 then
+            self.speedY = 600
         end
     end
 
-    self.x = self.x + self.vx*dt
-    self.y = self.y + self.vy*dt
+    self.x = self.x + self.speedX * dt
+    self.y = self.y + self.speedY * dt
 
     self:bumpInWalls(tiles)
 
     -- checking for ground
     if self:isOnGround(tiles) then
         self.inAir = false
-        self.vy = 0
+        self.speedY = 0
         self.canJump = true
     else
         self.inAir = true
@@ -120,30 +120,31 @@ function Player:updatePhysics(dt, tiles)
 
 end
 
+
 function Player:moveLeft()
-    self.vx = -self.costume.move_speed
+    self.speedX = -self.costume.moveSpeed
 end
 
 function Player:moveRight()
-    self.vx = self.costume.move_speed
+    self.speedX = self.costume.moveSpeed
 end
 
 function Player:stopMoving()
-    self.vx = 0
+    self.speedX = 0
 end
 
 function Player:jump()
     if self.canJump then
-        self.vy = -self.costume.jump_speed
+        self.speedY = -self.costume.jumpSpeed
         self.inAir = true
         self.canJump = false
     end
 end
 
 function Player:stopJump()
-    local min_jump_speed = self.costume.jump_speed / 2
-    if self.vy < -min_jump_speed then
-        self.vy = -min_jump_speed
+    local minJumpSpeed = self.costume.jumpSpeed / 2
+    if self.speedY < -minJumpSpeed then
+        self.speedY = -minJumpSpeed
     end
 end
 
@@ -152,11 +153,11 @@ function Player:updateDrawInfo()
 end
 
 function Player:shoot(targetX, targetY)
-    local playerX, playerY = self.x + self.w/2, self.y + self.h/2   -- center of the player
+    local playerX, playerY = self.x + self.w/2, self.y + self.h/2 -- center of the player
     local dispersion = self.crosshairDispersion * 2
     local dispX, dispY = 0, 0
     if dispersion > 1 then
-        dispX = math.random(dispersion) - dispersion/2  -- anywhere in the crosshair
+        dispX = math.random(dispersion) - dispersion/2 -- anywhere in the crosshair
         dispY = math.random(dispersion) - dispersion/2
     end
 
@@ -168,8 +169,8 @@ end
 
 function Player:updateCrosshair(mouseX, mouseY)
     -- options
-    local maxDist = self.costume.distance_shoot_dispersion           -- after maxDist, dispersion is maximal
-    local maxPixelDispersion = self.costume.max_shoot_dispersion -- dispersion is between 0 pixels and {maxPixelDispersion} pixels
+    local maxDist = self.costume.distanceShootDispersion       -- after maxDist, dispersion is maximal
+    local maxPixelDispersion = self.costume.maxShootDispersion -- dispersion is between 0 pixels and {maxPixelDispersion} pixels
 
     self.crosshairX = mouseX
     self.crosshairY = mouseY
