@@ -107,6 +107,9 @@ function game:keypressed(key)
     if key == ' ' or key == 'z' then
         self.player:jump()
     end
+    if key == 'a' then
+        self:spawnArmor()
+    end
 end
 
 function game:keyreleased(key)
