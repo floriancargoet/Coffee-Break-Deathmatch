@@ -27,7 +27,7 @@ Map.__index = Map
 function Map:new(name, width, height, tileWidth, tileHeight, orientation, properties)
 
 	-- Our map
-	map = {}
+	local map = {}
 	
 	-- Public:
 	map.name = name or "Unnamed Nap"				-- Name of the map

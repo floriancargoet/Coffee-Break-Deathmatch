@@ -47,7 +47,7 @@ end
 -- Tiled does it as possible.
 function ObjectLayer:draw()
 
-	local obj, d, offset							-- Some temporary variables
+	local obj, di, offset							-- Some temporary variables
 	local r,g,b,a = love.graphics.getColor()		-- Store the color so we can set it back
 	local line = love.graphics.getLineWidth()		-- Store the line width so we can set it back 
 	local iso = self.map.orientation == "isometric"	-- If true then the map is isometric
