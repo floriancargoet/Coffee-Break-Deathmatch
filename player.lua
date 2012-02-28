@@ -35,7 +35,8 @@ function Player:draw()
 
     -- crosshair
     local r, g, b, a = love.graphics.getColor() -- backup color
-    love.graphics.setColor(255, self.crosshairDispersion == 1 and 255 or 0, 0) -- yellow when max dispersion
+    local isDispersionMax = (self.crosshairDispersion == self.costume.maxShootDispersion)
+    love.graphics.setColor(255, isDispersionMax and 255 or 0, 0) -- yellow when dispersion is maximal
     love.graphics.setLineWidth(2)
     local x, y = self.crosshairX, self.crosshairY
     local d = math.floor(self.crosshairDispersion)
