@@ -1,5 +1,5 @@
 require 'lib/middleclass'
-require 'timedObject'
+require 'timed_object'
 
 global.Explosion = class('Explosion', TimedObject)
 
