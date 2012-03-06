@@ -1,17 +1,17 @@
+require 'lib/middleclass'
 require 'player'
 require 'projectile'
 require 'explosion'
 require 'armor_item'
 local camera = require 'lib/camera'
 
-local game = {}
-
-game.keys = {}
-game.timedObjects = {}
+global.Game = class('Game')
 
 -- Executed at startup
-function game:load()
+function Game:initialize()
     self.map = ATL.Loader.load('test.tmx')
+    self.keys = {}
+    self.timedObjects = {}
     self:spawnPlayer()
     self:spawnArmor()
     self.mainCamera = camera()
@@ -19,7 +19,7 @@ function game:load()
     self.mainCamera.limit_y = self.map.tileHeight*self.map.height
 end
 
-function game:spawnPlayer()
+function Game:spawnPlayer()
     local spawnIndex = math.random(#self.map.ol['Spawns'].objects)
     local spawnPoint = self.map.ol['Spawns'].objects[spawnIndex]
     local playerEntity = self.map.ol['Players']:newObject('player', 'Entity', spawnPoint.x, spawnPoint.y, 32, 64)
@@ -28,7 +28,7 @@ function game:spawnPlayer()
     self.player = player
 end
 
-function game:spawnArmor()
+function Game:spawnArmor()
     local spawnIndex = math.random(#self.map.ol['Spawns'].objects)
     local spawnPoint = self.map.ol['Spawns'].objects[spawnIndex]
     local armorEntity = self.map.ol['Items']:newObject('item', 'Entity', spawnPoint.x, spawnPoint.y+32, 32, 32)
@@ -36,17 +36,17 @@ function game:spawnArmor()
     armorEntity.refObject = armor
 end
 
-function game:createProjectile(x, y, angle, speed)
+function Game:createProjectile(x, y, angle, speed)
     local projectile = Projectile:new(x, y, angle, speed)
     table.insert(self.timedObjects, projectile)
 end
 
-function game:createExplosion(x, y)
+function Game:createExplosion(x, y)
     local explosion = Explosion:new(x, y)
     table.insert(self.timedObjects, explosion)
 end
 
-function game:checkForItems(player)
+function Game:checkForItems(player)
     local toRemove = {}
     for i, itemObj in ipairs(self.map.ol['Items'].objects) do
         local item = itemObj.refObject
@@ -61,7 +61,7 @@ function game:checkForItems(player)
     end
 end
 
-function game:updateTimedObjects(dt, tiles)
+function Game:updateTimedObjects(dt, tiles)
     local toRemove = {}
     for i, object in ipairs(self.timedObjects) do
         object:update(dt, tiles)
@@ -77,7 +77,7 @@ function game:updateTimedObjects(dt, tiles)
 end
 
 -- Executed each step
-function game:update(dt)
+function Game:update(dt)
 
     local tiles = self.map.tl['tiles'].tileData
 
@@ -106,7 +106,7 @@ function game:update(dt)
     p:updateDrawInfo() -- for drawRange optimizations
 end
 
-function game:keypressed(key)
+function Game:keypressed(key)
     self.keys[key] = true
     if key == ' ' or key == 'z' then
         self.player:jump()
@@ -116,14 +116,14 @@ function game:keypressed(key)
     end
 end
 
-function game:keyreleased(key)
+function Game:keyreleased(key)
     self.keys[key] = false
     if key == ' ' or key == 'z' then
         self.player:stopJump()
     end
 end
 
-function game:mousepressed(x, y, button)
+function Game:mousepressed(x, y, button)
 
     x, y = self.mainCamera:mousepos().x, self.mainCamera:mousepos().y
 
@@ -145,13 +145,13 @@ function game:mousepressed(x, y, button)
 
 end
 
-function game:mousereleased(x, y, button)
+function Game:mousereleased(x, y, button)
     if button == 'r' then
         self.player:stopJump()
     end
 end
 
-function game:updateCamera()
+function Game:updateCamera()
     local cam = self.mainCamera
 
     local offsetX = self.player.x - cam.pos.x
@@ -195,7 +195,7 @@ function game:updateCamera()
 end
 
 -- Drawing operations
-function game:draw()
+function Game:draw()
 
     self:updateCamera()
 
@@ -208,5 +208,3 @@ function game:draw()
     -- HUD
     love.graphics.print('Costume time left : ' .. math.ceil(self.player.costume.ttl) .. ' seconds', 0, 20)
 end
-
-return game

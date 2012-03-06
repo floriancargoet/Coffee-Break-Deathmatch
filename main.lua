@@ -14,12 +14,12 @@ setmetatable(_G, {__newindex = function(t,k,v)
 end})
 --
 
-global.game = require 'game'
+require 'game'
 
 -- Executed at startup
 function love.load()
     math.randomseed(os.time())
-    game:load()
+    global.game = Game()
     love.mouse.setVisible(false)
     --love.mouse.setGrab(true)
 end
