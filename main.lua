@@ -15,6 +15,10 @@ end})
 --
 
 require 'game'
+require 'server_game'
+require 'client_game'
+
+local lan = false
 
 -- Executed at startup
 function love.load()
@@ -32,6 +36,18 @@ end
 function love.keypressed(key)
     if love.keyboard.isDown('escape') then
         os.exit(0)
+    end
+    if love.keyboard.isDown('h') then
+        if not lan then
+            lan = true
+            global.game = ServerGame()
+        end
+    end
+    if love.keyboard.isDown('c') then
+        if not lan then
+            lan = true
+            global.game = ClientGame()
+        end
     end
     game:keypressed(key)
 end

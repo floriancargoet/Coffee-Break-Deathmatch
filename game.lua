@@ -10,22 +10,23 @@ global.Game = class('Game')
 -- Executed at startup
 function Game:initialize()
 
+    self.keys = {}
+
     self:loadLevel('test')
-    
+
     self.player = self:spawnPlayer('host')
 
     self:spawnArmor()
 
-    self.mainCamera = camera()
-    self.mainCamera.limit_x = self.map.tileWidth*self.map.width
-    self.mainCamera.limit_y = self.map.tileHeight*self.map.height
 end
 
 function Game:loadLevel(name)
     self.map = ATL.Loader.load(name .. '.tmx')
-    self.keys = {}
     self.timedObjects = {}
     self.players = {}
+    self.mainCamera = camera()
+    self.mainCamera.limit_x = self.map.tileWidth*self.map.width
+    self.mainCamera.limit_y = self.map.tileHeight*self.map.height
 end
 
 function Game:spawnPlayer(id)

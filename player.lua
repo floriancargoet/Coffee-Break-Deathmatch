@@ -27,6 +27,8 @@ function Player:initialize(id, entity)
     self.crosshairX = 0
     self.crosshairY = 0
 
+    self.crosshairDispersion = 0
+
 end
 
 function Player:draw()
