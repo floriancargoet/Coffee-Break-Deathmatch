@@ -3,8 +3,9 @@ require 'costume'
 
 global.Player = class('Player')
 
-function Player:initialize(entity)
+function Player:initialize(id, entity)
     -- copy some properties
+    self.id = id
     self.x = entity.x
     self.y = entity.y
     self.w = entity.width
@@ -15,7 +16,7 @@ function Player:initialize(entity)
     self.canJump = true
     self.entity = entity
 
-    self.defaultCostume = Costume:new()
+    self.defaultCostume = Costume()
     self.costume = self.defaultCostume
     
     local this = self
@@ -31,7 +32,9 @@ end
 function Player:draw()
     -- player sprite
     love.graphics.draw(self.costume.image, self.entity.x, self.entity.y)
+end
 
+function Player:drawCrosshair()
     -- crosshair
     local r, g, b, a = love.graphics.getColor() -- backup color
     local isDispersionMax = (self.crosshairDispersion == self.costume.maxShootDispersion)

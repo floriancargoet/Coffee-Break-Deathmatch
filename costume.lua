@@ -2,7 +2,13 @@ require 'lib/middleclass'
 
 global.Costume = class('Costume')
 
+Costume.registry = {}
+Costume.registry['Default'] = Costume
+
 function Costume:initialize()
+
+    self.name = 'Default'
+
     -- physics
     self.moveSpeed = 250
     self.jumpSpeed = 600

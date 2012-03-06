@@ -9,23 +9,52 @@ global.Game = class('Game')
 
 -- Executed at startup
 function Game:initialize()
-    self.map = ATL.Loader.load('test.tmx')
-    self.keys = {}
-    self.timedObjects = {}
-    self:spawnPlayer()
+
+    self:loadLevel('test')
+    
+    self.player = self:spawnPlayer('host')
+
     self:spawnArmor()
+
     self.mainCamera = camera()
     self.mainCamera.limit_x = self.map.tileWidth*self.map.width
     self.mainCamera.limit_y = self.map.tileHeight*self.map.height
 end
 
-function Game:spawnPlayer()
+function Game:loadLevel(name)
+    self.map = ATL.Loader.load(name .. '.tmx')
+    self.keys = {}
+    self.timedObjects = {}
+    self.players = {}
+end
+
+function Game:spawnPlayer(id)
     local spawnIndex = math.random(#self.map.ol['Spawns'].objects)
     local spawnPoint = self.map.ol['Spawns'].objects[spawnIndex]
     local playerEntity = self.map.ol['Players']:newObject('player', 'Entity', spawnPoint.x, spawnPoint.y, 32, 64)
-    local player = Player:new(playerEntity)
+    local player = Player(id, playerEntity)
 
-    self.player = player
+    playerEntity.refObject = player
+
+    self.players[id] = player
+
+    return player
+end
+
+function Game:killPlayer(id)
+    local toRemove = {}
+    for i, playerEntity in ipairs(self.map.ol['Players'].objects) do
+        if self.players[id] == playerEntity.refObject then
+            table.insert(toRemove, i)
+            break
+        end
+    end
+
+    for i, object in ipairs(toRemove) do
+        table.remove(self.map.ol['Players'].objects, object)
+    end
+
+    self.players[id] = nil
 end
 
 function Game:spawnArmor()
@@ -83,27 +112,31 @@ function Game:update(dt)
 
     self:updateTimedObjects(dt, tiles)
 
-    local p = self.player
+    local myPlayer = self.player
     local k = self.keys
 
     if k.left or k.q then
-        p:moveLeft()
+        myPlayer:moveLeft()
     end
     if k.right or k.d then
-        p:moveRight()
+        myPlayer:moveRight()
     end
     if not (k.left or k.right or k.q or k.d) then
-        p:stopMoving()
+        myPlayer:stopMoving()
     end
     
     if k.up then
-        p:jump()
+        myPlayer:jump()
     end
 
-    self:checkForItems(self.player)
-    p:updatePhysics(dt, tiles)
-    p:updateCrosshair(self.mainCamera:mousepos().x, self.mainCamera:mousepos().y)
-    p:updateDrawInfo() -- for drawRange optimizations
+    for id, p in pairs(self.players) do
+        self:checkForItems(p)
+        p:updatePhysics(dt, tiles)
+        p:updateDrawInfo() -- for drawRange optimizations    
+    end
+
+    myPlayer:updateCrosshair(self.mainCamera:mousepos().x, self.mainCamera:mousepos().y)
+
 end
 
 function Game:keypressed(key)
@@ -201,9 +234,12 @@ function Game:draw()
 
     self.mainCamera:attach()
     self.map:draw()
+    self.player:drawCrosshair()
+
     for i, object in ipairs(self.timedObjects) do
         object:draw()
     end
+
     self.mainCamera:detach()
     -- HUD
     love.graphics.print('Costume time left : ' .. math.ceil(self.player.costume.ttl) .. ' seconds', 0, 20)

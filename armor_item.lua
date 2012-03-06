@@ -16,5 +16,5 @@ function Item:draw()
 end
 
 function Item:applyEffect(player)
-    player.costume = Armor:new()
+    player.costume = Armor()
 end
