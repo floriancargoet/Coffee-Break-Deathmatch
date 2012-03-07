@@ -39,6 +39,8 @@ function ServerGame:startServer()
 
     self.server:listen(port)
 
+    self.dtState = 0
+
 end
 
 function ServerGame.playerConnect(id)
@@ -97,5 +99,11 @@ function ServerGame:update(dt)
 
     Game.update(self, dt)
 
-    self:sendGameState()
+    self.dtState = self.dtState + dt
+
+    if self.dtState >= 1/100 then
+        self:sendGameState()
+        self.dtState = 0
+    end
+
 end
