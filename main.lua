@@ -66,8 +66,8 @@ end
 
 -- Drawing operations
 function love.draw()
-    love.graphics.setBackgroundColor(50, 50, 50)
-    love.graphics.clear()
     game:draw()
     love.graphics.print(love.timer.getFPS(), 0, 0)
+
+    love.graphics.setBackgroundColor(50, 50, 50)
 end

@@ -85,6 +85,9 @@ function ServerGame:sendGameState()
             costume = player.costume.name,
             costumeTime = player.costume.ttl
         }
+        if player.costume.ttl == math.huge then
+            state.players[id].costumeTime = nil
+        end
     end
     self.server:send(TSerial.pack(state))
 end
