@@ -21,10 +21,6 @@ function ClientGame:initialize()
     self.player = self:spawnPlayer('host')
     self.playerId = 'host'
 
-    self.mainCamera = camera()
-    self.mainCamera.limit_x = self.map.tileWidth*self.map.width
-    self.mainCamera.limit_y = self.map.tileHeight*self.map.height
-
     self.synchronized = false
     self.lastUpdate = os.clock()
 
