@@ -19,6 +19,9 @@ function Armor:initialize()
     self.maxDistanceShootDispersion = 500
     self.maxShootDispersion = 0 -- you are a sniper!
 
+    -- protection
+    self.damageCoeff = 0.5
+
     -- display
     self.image = love.graphics.newImage('img/armor.png')
 

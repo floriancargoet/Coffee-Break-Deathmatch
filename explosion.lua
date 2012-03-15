@@ -3,8 +3,8 @@ require 'timed_object'
 
 global.Explosion = class('Explosion', TimedObject)
 
-function Explosion:initialize(x, y)
-    TimedObject.initialize(self, x, y, 0.1)
+function Explosion:initialize(owner, x, y)
+    TimedObject.initialize(self, owner, x, y, 0.1)
 
     self.img = love.graphics.newImage('img/explosion.tga')
 

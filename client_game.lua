@@ -72,6 +72,7 @@ function ClientGame.parseMessage(data)
             end
             player.x = playerState.x
             player.y = playerState.y
+            player.hp = playerState.hp
             player.entity.x = playerState.x
             player.entity.y = playerState.y
             player.speedX = playerState.speedX
@@ -82,6 +83,17 @@ function ClientGame.parseMessage(data)
             else
                 player.costume.ttl = playerState.costumeTime
             end
+        end
+        game.timedObjects = {}
+        for id, objState in pairs(state.timedObjects) do
+            local obj = {}
+            if (objState.type == 'explosion') then
+                obj = Explosion:new(game.players[objState.ownerId], objState.x, objState.y)
+            end
+            if (objState.type == 'projectile') then
+                obj = Projectile:new(game.players[objState.ownerId], objState.x, objState.y, 0, 0)
+            end
+            table.insert(game.timedObjects, obj)
         end
         game.player = game.players[game.playerId]
         game.lastUpdate = state.time

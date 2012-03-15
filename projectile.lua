@@ -3,16 +3,17 @@ require 'timed_object'
 
 global.Projectile = class('Projectile', TimedObject)
 
-function Projectile:initialize(x, y, angle, speed)
-    TimedObject.initialize(self, x, y, 1)
+function Projectile:initialize(owner, x, y, angle, speed)
+    TimedObject.initialize(self, owner, x, y, 1)
     self.angle = angle
     self.speed = speed
+    self.power = 10
 
     self.img = love.graphics.newImage('img/bullet.tga')
 
 end
 
-function Projectile:update(dt, tiles)
+function Projectile:update(dt, tiles, players)
     TimedObject.update(self, dt, tiles)
 
     -- projectile update
@@ -34,10 +35,19 @@ function Projectile:update(dt, tiles)
         end
     end
 
+    for id, player in pairs(players) do
+        if id ~= self.owner.id then
+            if self.x + 2 < player.x + 32 and self.x + 2 > player.x and self.y + 2 < player.y + 64 and self.y + 2 > player.y + 12 then
+                player:hit(self.power)
+                self.alive = false
+            end
+        end
+    end
+
 end
 
 function Projectile:kill()
-    game:createExplosion(self.x, self.y)
+    game:createExplosion(self.owner, self.x, self.y)
 end
 
 function Projectile:draw()

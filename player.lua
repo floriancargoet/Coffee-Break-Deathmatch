@@ -10,6 +10,7 @@ function Player:initialize(id, entity)
     self.y = entity.y
     self.w = entity.width
     self.h = entity.height
+    self.hp = 100
 
     self.speedX = 0
     self.speedY = 0
@@ -153,6 +154,11 @@ function Player:stopJump()
     end
 end
 
+function Player:hit(power)
+    local minJumpSpeed = self.costume.jumpSpeed / 2
+    self.hp = self.hp - (self.costume.damageCoeff * power)
+end
+
 function Player:updateDrawInfo()
     self.entity:updateDrawInfo()
 end
@@ -169,7 +175,7 @@ function Player:shoot(targetX, targetY)
     local hitX = targetX + dispX
     local hitY = targetY + dispY
     local angle = math.atan2((hitY - playerY),(hitX - playerX))
-    game:createProjectile(playerX, playerY, angle, 1000)
+    game:createProjectile(self, playerX, playerY, angle, 1000)
 end
 
 function Player:updateCrosshair(mouseX, mouseY)

@@ -66,13 +66,13 @@ function Game:spawnArmor()
     armorEntity.refObject = armor
 end
 
-function Game:createProjectile(x, y, angle, speed)
-    local projectile = Projectile:new(x, y, angle, speed)
+function Game:createProjectile(owner, x, y, angle, speed)
+    local projectile = Projectile:new(owner, x, y, angle, speed)
     table.insert(self.timedObjects, projectile)
 end
 
-function Game:createExplosion(x, y)
-    local explosion = Explosion:new(x, y)
+function Game:createExplosion(owner, x, y)
+    local explosion = Explosion:new(owner, x, y)
     table.insert(self.timedObjects, explosion)
 end
 
@@ -91,10 +91,10 @@ function Game:checkForItems(player)
     end
 end
 
-function Game:updateTimedObjects(dt, tiles)
+function Game:updateTimedObjects(dt, tiles, players)
     local toRemove = {}
     for i, object in ipairs(self.timedObjects) do
-        object:update(dt, tiles)
+        object:update(dt, tiles, players)
         if not object.alive then
             table.insert(toRemove, i)
             object:kill()
@@ -111,7 +111,7 @@ function Game:update(dt)
 
     local tiles = self.map.tl['tiles'].tileData
 
-    self:updateTimedObjects(dt, tiles)
+    self:updateTimedObjects(dt, tiles, self.players)
 
     local myPlayer = self.player
     local k = self.keys
@@ -133,7 +133,12 @@ function Game:update(dt)
     for id, p in pairs(self.players) do
         self:checkForItems(p)
         p:updatePhysics(dt, tiles)
-        p:updateDrawInfo() -- for drawRange optimizations    
+        p:updateDrawInfo() -- for drawRange optimizations
+
+        if (p.hp <= 0) then
+            self:killPlayer(id)
+            self:spawnPlayer(id)
+        end
     end
 
     myPlayer:updateCrosshair(self.mainCamera:mousepos().x, self.mainCamera:mousepos().y)
@@ -243,5 +248,6 @@ function Game:draw()
 
     self.mainCamera:detach()
     -- HUD
-    love.graphics.print('Costume time left : ' .. math.ceil(self.player.costume.ttl) .. ' seconds', 0, 20)
+    love.graphics.print('HP : ' .. self.player.hp, 0, 20)
+    love.graphics.print('Costume time left : ' .. math.ceil(self.player.costume.ttl) .. ' seconds', 0, 40)
 end

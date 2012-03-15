@@ -17,6 +17,9 @@ function Costume:initialize()
     -- shooting
     self.maxDistanceShootDispersion = 500 -- after this distance (pixels), dispersion doesn't increase anymore
     self.maxShootDispersion = 30          -- maximum size of the crosshair
+
+    -- protection
+    self.damageCoeff = 1
     
     -- display
     self.image = love.graphics.newImage('img/player.png')

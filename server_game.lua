@@ -49,23 +49,24 @@ function ServerGame.playerDisconnect(id)
 end
 
 function ServerGame.parseMessage(data, id)
-    if (data == 'getId') then
-        game.server:send(TSerial.pack({type = 'playerid', id = id}), id)
-    end
-    if (data == 'jump') then
+    local message = TSerial.unpack(data)
+    if (message.action == 'jump') then
         game.players[id]:jump()
     end
-    if (data == 'stopJump') then
+    if (message.action == 'stopJump') then
         game.players[id]:stopJump()
     end
-    if (data == 'moveLeft') then
+    if (message.action == 'moveLeft') then
         game.players[id]:moveLeft()
     end
-    if (data == 'moveRight') then
+    if (message.action == 'moveRight') then
         game.players[id]:moveRight()
     end
-    if (data == 'stopMoving') then
+    if (message.action == 'stopMoving') then
         game.players[id]:stopMoving()
+    end
+    if (message.action == 'shoot') then
+        game.players[id]:shoot(message.targetX, message.targetY)
     end
 end
 
@@ -78,6 +79,7 @@ function ServerGame:sendGameState()
         state.players[id] = {
             x = player.x,
             y = player.y,
+            hp = player.hp,
             speedX = player.speedX,
             speedY = player.speedY,
             costume = player.costume.name,
@@ -85,6 +87,20 @@ function ServerGame:sendGameState()
         }
         if player.costume.ttl == math.huge then
             state.players[id].costumeTime = nil
+        end
+    end
+    state.timedObjects = {}
+    for id, obj in pairs(self.timedObjects) do
+        state.timedObjects[id] = {
+            x = obj.x,
+            y = obj.y,
+            ownerId = obj.owner.id
+        }
+        if instanceOf(Explosion, obj) then
+            state.timedObjects[id].type = 'explosion'
+        end
+        if instanceOf(Projectile, obj) then
+            state.timedObjects[id].type = 'projectile'
         end
     end
     self.server:send(TSerial.pack(state))
