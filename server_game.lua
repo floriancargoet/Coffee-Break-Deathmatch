@@ -103,6 +103,16 @@ function ServerGame:sendGameState()
             state.timedObjects[id].type = 'projectile'
         end
     end
+    state.items = {}
+    for id, itemObj in pairs(self.map.ol['Items'].objects) do
+        local item = itemObj.refObject
+        state.items[id] = {
+            x = itemObj.x,
+            y = itemObj.y,
+            itemType = item.name
+        }
+    end
+
     self.server:send(TSerial.pack(state))
 end
 

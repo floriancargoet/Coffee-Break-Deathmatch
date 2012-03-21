@@ -4,8 +4,12 @@ require 'armor'
 
 global.ArmorItem = class('ArmorItem', Item)
 
+Item.registry['Armor'] = ArmorItem
+
 function ArmorItem:initialize(entity)
     Item.initialize(self, entity)
+
+    self.name = 'Armor'
 
     self.img = love.graphics.newImage('img/armor_icon.png')
 end

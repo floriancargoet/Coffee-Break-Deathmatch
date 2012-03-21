@@ -95,6 +95,16 @@ function ClientGame.parseMessage(data)
             end
             table.insert(game.timedObjects, obj)
         end
+
+        -- We clear all objects
+        game.map.ol['Items'].objects = {}
+
+        for id, itemState in pairs(state.items) do
+            local itemEntity = game.map.ol['Items']:newObject('item', 'Entity', itemState.x, itemState.y, 32, 32)
+            local item = Item.registry[itemState.itemType](itemEntity)
+            itemEntity.refObject = item
+        end
+
         game.player = game.players[game.playerId]
         game.lastUpdate = state.time
         game.synchronized = true
