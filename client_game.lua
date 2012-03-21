@@ -22,7 +22,7 @@ function ClientGame:initialize()
     self.playerId = 'host'
 
     self.synchronized = false
-    self.lastUpdate = os.clock()
+    self.lastUpdateTime = os.clock()
 
     self:startClient()
 end
@@ -55,63 +55,74 @@ function ClientGame:startClient()
 end
 
 function ClientGame.parseMessage(data)
-    if not game.synchronized then
-        game:loadLevel('test')
-    end
-
     local message = TSerial.unpack(data)
     if (message.type == 'gamestate') then
         local state = message
-        if (game.lastUpdate > state.time) then
+        if (game.lastUpdateTime > state.time) then
             return
         end
-        for id, playerState in pairs(state.players) do
-            local player = game.players[id]
-            if not player then
-                player = game:spawnLANPlayer(id)
-            end
-            player.x = playerState.x
-            player.y = playerState.y
-            player.hp = playerState.hp
-            player.entity.x = playerState.x
-            player.entity.y = playerState.y
-            player.speedX = playerState.speedX
-            player.speedY = playerState.speedY
-            player.costume = Costume.registry[playerState.costume]()
-            if not playerState.costumeTime then
-                player.costume.ttl = math.huge
-            else
-                player.costume.ttl = playerState.costumeTime
-            end
-        end
-        game.timedObjects = {}
-        for id, objState in pairs(state.timedObjects) do
-            local obj = {}
-            if (objState.type == 'explosion') then
-                obj = Explosion:new(game.players[objState.ownerId], objState.x, objState.y)
-            end
-            if (objState.type == 'projectile') then
-                obj = Projectile:new(game.players[objState.ownerId], objState.x, objState.y, 0, 0)
-            end
-            table.insert(game.timedObjects, obj)
-        end
-
-        -- We clear all objects
-        game.map.ol['Items'].objects = {}
-
-        for id, itemState in pairs(state.items) do
-            local itemEntity = game.map.ol['Items']:newObject('item', 'Entity', itemState.x, itemState.y, 32, 32)
-            local item = Item.registry[itemState.itemType](itemEntity)
-            itemEntity.refObject = item
-        end
-
-        game.player = game.players[game.playerId]
-        game.lastUpdate = state.time
-        game.synchronized = true
+        game.lastUpdate = state
+        game.lastUpdateTime = state.time
     end
     if (message.type == 'playerid') then
         game.playerId = message.id
     end
+end
+
+function ClientGame:updateGameState()
+
+    local state = self.lastUpdate
+    if not state then
+        return
+    end
+
+    if not self.synchronized then
+        self:loadLevel('test')
+    end
+
+    for id, playerState in pairs(state.players) do
+        local player = self.players[id]
+        if not player then
+            player = self:spawnLANPlayer(id)
+        end
+        player.x = playerState.x
+        player.y = playerState.y
+        player.hp = playerState.hp
+        player.entity.x = playerState.x
+        player.entity.y = playerState.y
+        player.speedX = playerState.speedX
+        player.speedY = playerState.speedY
+        player.costume = Costume.registry[playerState.costume]()
+        if not playerState.costumeTime then
+            player.costume.ttl = math.huge
+        else
+            player.costume.ttl = playerState.costumeTime
+        end
+    end
+    self.timedObjects = {}
+    for id, objState in pairs(state.timedObjects) do
+        local obj = {}
+        if (objState.type == 'explosion') then
+            obj = Explosion:new(self.players[objState.ownerId], objState.x, objState.y)
+        end
+        if (objState.type == 'projectile') then
+            obj = Projectile:new(self.players[objState.ownerId], objState.x, objState.y, 0, 0)
+        end
+        table.insert(self.timedObjects, obj)
+    end
+
+    -- We clear all objects
+    self.map.ol['Items'].objects = {}
+
+    for id, itemState in pairs(state.items) do
+        local itemEntity = self.map.ol['Items']:newObject('item', 'Entity', itemState.x, itemState.y, 32, 32)
+        local item = Item.registry[itemState.itemType](itemEntity)
+        itemEntity.refObject = item
+    end
+
+    self.player = self.players[game.playerId]
+    self.synchronized = true
+
 end
 
 function ClientGame:update(dt)
@@ -119,6 +130,7 @@ function ClientGame:update(dt)
     Game.update(self, dt)
 
     self.client:update(dt)
+    self:updateGameState()
 end
 
 function ClientGame:draw()
