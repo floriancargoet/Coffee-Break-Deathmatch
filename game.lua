@@ -39,6 +39,10 @@ function Game:spawnPlayer(id)
 
     self.players[id] = player
 
+    if id == 'host' then
+        self.player = player
+    end
+
     return player
 end
 
@@ -248,6 +252,13 @@ function Game:draw()
 
     self.mainCamera:detach()
     -- HUD
-    love.graphics.print('HP : ' .. self.player.hp, 0, 20)
+    if (self.player.hp <= 20) then
+        local oldr, oldg, oldb, olda = love.graphics.getColor()
+        love.graphics.setColor(255, 0, 0, olda)
+        love.graphics.print('HP : ' .. self.player.hp, 0, 20)
+        love.graphics.setColor(oldr, oldg, oldb, olda)
+    else
+        love.graphics.print('HP : ' .. self.player.hp, 0, 20)
+    end
     love.graphics.print('Costume time left : ' .. math.ceil(self.player.costume.ttl) .. ' seconds', 0, 40)
 end
