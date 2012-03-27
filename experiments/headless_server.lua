@@ -16,47 +16,47 @@ require 'lib/middleclass'
 
 -- We don't want to read the tileset so we override processMap
 function ATL.Loader._processMap(name, t)
-	
-	-- Do some checking
-	ATL.Loader._checkXML(t)
-	assert(t.label == "map", "Loader._processMap - Passed table is not a map")
-	assert(t.xarg.width, t.xarg.height, t.xarg.tilewidth, t.xarg.tileheight,
-		   "Loader._processMap - Map data is corrupt")
 
-	-- We'll use these for temporary storage
-	local map, tileset, tilelayer, objectlayer
-	
-	-- Create the map from the settings
-	local map = ATL.Map:new(name, tonumber(t.xarg.width),tonumber(t.xarg.height), 
-						tonumber(t.xarg.tilewidth), tonumber(t.xarg.tileheight), 
-						t.xarg.orientation)
-							
-	-- Now we fill it with the content
-	for _, v in ipairs(t) do
+    -- Do some checking
+    ATL.Loader._checkXML(t)
+    assert(t.label == "map", "Loader._processMap - Passed table is not a map")
+    assert(t.xarg.width, t.xarg.height, t.xarg.tilewidth, t.xarg.tileheight,
+           "Loader._processMap - Map data is corrupt")
 
-		-- Process TileLayer
-		if v.label == "layer" then
-			tilelayer = ATL.Loader._processTileLayer(v, map)
-			map.tl[tilelayer.name] = tilelayer
-			map.drawList[#map.drawList + 1] = tilelayer
-		end
-		
-		-- Process ObjectLayer
-		if v.label == "objectgroup" then
-			objectlayer = ATL.Loader._processObjectLayer(v, map)
-			map.ol[objectlayer.name] = objectlayer
-			map.drawList[#map.drawList + 1] = objectlayer
-		end
-		
-		-- Process Map properties
-		if v.label == "properties" then
-			map.properties = ATL.Loader._processProperties(v)
-		end
-			
-	end
-	
-	-- Return our map
-	return map
+    -- We'll use these for temporary storage
+    local map, tileset, tilelayer, objectlayer
+
+    -- Create the map from the settings
+    local map = ATL.Map:new(name, tonumber(t.xarg.width),tonumber(t.xarg.height),
+                        tonumber(t.xarg.tilewidth), tonumber(t.xarg.tileheight),
+                        t.xarg.orientation)
+
+    -- Now we fill it with the content
+    for _, v in ipairs(t) do
+
+        -- Process TileLayer
+        if v.label == "layer" then
+            tilelayer = ATL.Loader._processTileLayer(v, map)
+            map.tl[tilelayer.name] = tilelayer
+            map.drawList[#map.drawList + 1] = tilelayer
+        end
+
+        -- Process ObjectLayer
+        if v.label == "objectgroup" then
+            objectlayer = ATL.Loader._processObjectLayer(v, map)
+            map.ol[objectlayer.name] = objectlayer
+            map.drawList[#map.drawList + 1] = objectlayer
+        end
+
+        -- Process Map properties
+        if v.label == "properties" then
+            map.properties = ATL.Loader._processProperties(v)
+        end
+
+    end
+
+    -- Return our map
+    return map
 end
 
 
