@@ -179,10 +179,10 @@ function Game:mousepressed(x, y, button)
         p:jump()
     end
 
-    if button == "wu" then
+    if button == 'wu' then
         self.mainCamera.zoom = self.mainCamera.zoom + 0.1
     end
-    if button == "wd" then
+    if button == 'wd' then
         self.mainCamera.zoom = self.mainCamera.zoom - 0.1
     end
 

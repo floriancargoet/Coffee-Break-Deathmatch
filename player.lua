@@ -56,33 +56,88 @@ function Player:drawCrosshair()
     love.graphics.setColor(r, g, b, a) -- restore color
 end
 
-function Player:bumpInWalls(tiles)
-    for j, temp in ipairs(tiles) do
-        for i, tile in ipairs(temp) do
-            if tile ~= 0 then
-                local tileX = (i-1)*32
-                local tileY = (j-1)*32
-                
-                if self.x < tileX + 32 and self.x + 32 > tileX and self.y + 12 < tileY + 32 and self.y + 64 > tileY then
-                    self.x = self.oldX
+function Player:getBBox()
+    local x = self.x
+    local w = self.w
+    local y = self.y
+    local h = self.h
+
+    return x, y, w, h
+end
+
+-- return the coordinates of the tiles the player touches
+function Player:getSurroundingTiles(tiles)
+    local x, y, w, h = self:getBBox()
+    -- transform in grid coordinates
+    local tileSize = 32
+    local tl, br
+    tl = {(x - x % tileSize) / tileSize, (y - y % tileSize) / tileSize}
+    br = {((x + w) - (x + w) % tileSize) /tileSize, ((y + h) - (y + h) % tileSize) / tileSize}
+
+    local collidedTiles = {}
+    for tileX = tl[1], br[1] do
+        for tileY = tl[2], br[2] do
+            local row = tiles[tileY + 1]
+            if row then
+                local tile = row[tileX + 1]
+                if tile then
+                    table.insert(collidedTiles, {x = tileX + 1, y = tileY + 1, size = tileSize, tileType = tile}) -- tiles have 1-based indexing
                 end
+            end
+        end
+    end
+
+    return collidedTiles
+end
+
+function Player:bumpInWalls(tiles)
+    local surroundingTiles = self:getSurroundingTiles(tiles)
+    for i, tile in ipairs(surroundingTiles) do
+        if tile.tileType ~= 0 then
+            local tileX = (tile.x-1) * tile.size
+            local tileY = (tile.y-1) * tile.size
+            local tileX2 = (tile.x) * tile.size
+            local tileY2 = (tile.y) * tile.size
+            if not (self.x + 4 >= tileX2 or self.x + 28 <= tileX or self.y + 20 >= tileY2 or self.y + 64 <= tileY) then
+                self.x = self.oldX
+                self.speedX = 0
+            end
+        end
+    end
+end
+
+function Player:bumpInCeiling(tiles)
+    if self.speedY > 0 then return false end
+
+    local surroundingTiles = self:getSurroundingTiles(tiles)
+    for i, tile in ipairs(surroundingTiles) do
+        if tile.tileType ~= 0 then
+            local tileX = (tile.x-1) * tile.size
+            local tileY = (tile.y-1) * tile.size
+            local tileX2 = (tile.x) * tile.size
+            local tileY2 = (tile.y) * tile.size
+            if not (self.x + 4 >= tileX2 or self.x + 28 <= tileX or self.y + 20 >= tileY2 or self.y + 64 <= tileY) then
+                self.y = tileY + 32 - 20
+                self.speedY = 0
             end
         end
     end
 end
 
 function Player:isOnGround(tiles)
-    for j, temp in ipairs(tiles) do
-        for i, tile in ipairs(temp) do
-            if tile ~= 0 then
-                local tileX = (i-1)*32
-                local tileY = (j-1)*32
-                
-                if self.x + 2 < tileX + 32 and self.x + 30 > tileX and self.y + 64 < tileY + 32 and self.y + 64 >= tileY then
-                    -- we adjust the y position
-                    self.y = tileY - 64
-                    return true
-                end
+    if self.speedY < 0 then return false end
+
+    local surroundingTiles = self:getSurroundingTiles(tiles)
+    for i, tile in ipairs(surroundingTiles) do
+        if tile.tileType ~= 0 then
+            local tileX = (tile.x-1) * tile.size
+            local tileY = (tile.y-1) * tile.size
+            local tileX2 = (tile.x) * tile.size
+            local tileY2 = (tile.y) * tile.size
+            if not (self.x + 4 >= tileX2 or self.x + 28 <= tileX or self.y + 20 >= tileY2 or self.y + 64 < tileY) then
+                -- we adjust the y position
+                self.y = tileY - 64
+                return true
             end
         end
     end
@@ -111,6 +166,7 @@ function Player:updatePhysics(dt, tiles)
     self.y = self.y + self.speedY * dt
 
     self:bumpInWalls(tiles)
+    self:bumpInCeiling(tiles)
 
     -- checking for ground
     if self:isOnGround(tiles) then
