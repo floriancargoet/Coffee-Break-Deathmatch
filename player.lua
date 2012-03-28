@@ -14,7 +14,7 @@ function Player:initialize(id, entity)
 
     self.speedX = 0
     self.speedY = 0
-    self.canJump = true
+    self.canJump = 0
     self.entity = entity
 
     self.defaultCostume = Costume()
@@ -172,9 +172,12 @@ function Player:updatePhysics(dt, tiles)
     if self:isOnGround(tiles) then
         self.inAir = false
         self.speedY = 0
-        self.canJump = true
+        self.canJump = 100
     else
         self.inAir = true
+        if self.canJump > 0 then
+            self.canJump = self.canJump - dt * 1000
+        end
     end
 
     self.entity.x = self.x
@@ -196,10 +199,10 @@ function Player:stopMoving()
 end
 
 function Player:jump()
-    if self.canJump then
+    if self.canJump > 0 then
         self.speedY = -self.costume.jumpSpeed
         self.inAir = true
-        self.canJump = false
+        self.canJump = 0
     end
 end
 
