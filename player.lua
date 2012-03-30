@@ -222,9 +222,9 @@ function Player:updateDrawInfo()
     self.entity:updateDrawInfo()
 end
 
-function Player:shoot(targetX, targetY)
+function Player:shoot(targetX, targetY, dispersion)
     local playerX, playerY = self.x + self.w/2, self.y + self.h/2 -- center of the player
-    local dispersion = self.crosshairDispersion * 2
+    local dispersion = dispersion or (self.crosshairDispersion * 2)
     local dispX, dispY = 0, 0
     if dispersion > 1 then
         dispX = math.random(dispersion) - dispersion/2 -- anywhere in the crosshair

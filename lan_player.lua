@@ -41,10 +41,12 @@ function LANPlayer:stopJump()
     self.client:send(TSerial.pack(msg))
 end
 
-function LANPlayer:shoot(targetX, targetY)
+function LANPlayer:shoot(targetX, targetY, dispersion)
     local msg = {}
     msg.action = 'shoot'
     msg.targetX = targetX
     msg.targetY = targetY
+    -- Means that it's possible to cheat by modifying this value to change max dispersion
+    msg.dispersion = dispersion or (self.crosshairDispersion * 2)
     self.client:send(TSerial.pack(msg))
 end

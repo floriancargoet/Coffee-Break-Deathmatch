@@ -66,7 +66,7 @@ function ServerGame.parseMessage(data, id)
         game.players[id]:stopMoving()
     end
     if (message.action == 'shoot') then
-        game.players[id]:shoot(message.targetX, message.targetY)
+        game.players[id]:shoot(message.targetX, message.targetY, message.dispersion)
     end
 end
 
