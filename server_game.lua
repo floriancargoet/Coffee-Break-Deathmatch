@@ -18,6 +18,10 @@ function ServerGame:initialize()
 
     self.player = self:spawnPlayer('host')
 
+    self.hud = HUD({
+        fps = true
+    })
+
     self:startServer()
 end
 

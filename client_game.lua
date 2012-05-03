@@ -21,6 +21,10 @@ function ClientGame:initialize()
     self.player = self:spawnPlayer('host')
     self.playerId = 'host'
 
+    self.hud = HUD({
+        fps = true
+    })
+
     self.synchronized = false
     self.lastUpdateTime = os.clock()
 

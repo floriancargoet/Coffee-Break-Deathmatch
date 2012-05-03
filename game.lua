@@ -3,6 +3,8 @@ require 'player'
 require 'projectile'
 require 'explosion'
 require 'armor_item'
+require 'hud'
+
 local camera = require 'lib/camera'
 
 global.Game = class('Game')
@@ -15,6 +17,10 @@ function Game:initialize()
     self:loadLevel(level)
 
     self.player = self:spawnPlayer('host')
+
+    self.hud = HUD({
+        fps = true
+    })
 
     self:spawnArmor()
 
@@ -129,7 +135,7 @@ function Game:update(dt)
     if not (k.left or k.right or k.q or k.d) then
         myPlayer:stopMoving()
     end
-    
+
     if k.up then
         myPlayer:jump()
     end
@@ -147,6 +153,10 @@ function Game:update(dt)
 
     self:updateCamera()
     myPlayer:updateCrosshair(self.mainCamera:mousepos().x, self.mainCamera:mousepos().y)
+    self.hud:update({
+        hp          = myPlayer.hp,
+        costume_ttl = myPlayer.costume.ttl
+    })
 
 end
 
@@ -175,7 +185,7 @@ function Game:mousepressed(x, y, button)
     if button == 'l' then
         p:shoot(x, y)
     end
-    
+
     if button == 'r' then
         p:jump()
     end
@@ -250,14 +260,7 @@ function Game:draw()
     end
 
     self.mainCamera:detach()
+
     -- HUD
-    if (self.player.hp <= 20) then
-        local oldr, oldg, oldb, olda = love.graphics.getColor()
-        love.graphics.setColor(255, 0, 0, olda)
-        love.graphics.print('HP : ' .. self.player.hp, 0, 20)
-        love.graphics.setColor(oldr, oldg, oldb, olda)
-    else
-        love.graphics.print('HP : ' .. self.player.hp, 0, 20)
-    end
-    love.graphics.print('Costume time left : ' .. math.ceil(self.player.costume.ttl) .. ' seconds', 0, 40)
+    self.hud:draw()
 end
