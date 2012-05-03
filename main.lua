@@ -22,7 +22,7 @@ local lan = false
 local levels = {
 	'test'
 }
-global.level = levels[2]
+global.level = levels[1]
 
 -- Executed at startup
 function love.load()
