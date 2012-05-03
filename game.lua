@@ -145,6 +145,7 @@ function Game:update(dt)
         end
     end
 
+    self:updateCamera()
     myPlayer:updateCrosshair(self.mainCamera:mousepos().x, self.mainCamera:mousepos().y)
 
 end
@@ -239,8 +240,6 @@ end
 
 -- Drawing operations
 function Game:draw()
-
-    self:updateCamera()
 
     self.mainCamera:attach()
     self.map:draw()
