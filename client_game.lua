@@ -16,7 +16,7 @@ local port = 10000
 function ClientGame:initialize()
     self.keys = {}
 
-    self:loadLevel('test')
+    self:loadLevel(level)
 
     self.player = self:spawnPlayer('host')
     self.playerId = 'host'
@@ -77,7 +77,7 @@ function ClientGame:updateGameState()
     end
 
     if not self.synchronized then
-        self:loadLevel('test')
+        self:loadLevel(level)
     end
 
     for id, playerState in pairs(state.players) do

@@ -14,7 +14,7 @@ local port = 10000
 function ServerGame:initialize()
     self.keys = {}
 
-    self:loadLevel('test')
+    self:loadLevel(level)
 
     self.player = self:spawnPlayer('host')
 

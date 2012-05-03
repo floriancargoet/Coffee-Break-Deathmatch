@@ -12,7 +12,7 @@ function Game:initialize()
 
     self.keys = {}
 
-    self:loadLevel('test')
+    self:loadLevel(level)
 
     self.player = self:spawnPlayer('host')
 

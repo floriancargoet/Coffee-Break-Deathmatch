@@ -19,6 +19,10 @@ require 'server_game'
 require 'client_game'
 
 local lan = false
+local levels = {
+	'test'
+}
+global.level = levels[2]
 
 -- Executed at startup
 function love.load()
