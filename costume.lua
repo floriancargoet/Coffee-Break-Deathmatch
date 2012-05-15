@@ -29,9 +29,8 @@ function Costume:initialize()
 end
 
 function Costume:update(dt)
-    if (self.ttl > 0) then
-        self.ttl = self.ttl - 1*dt
-    else
+    self.ttl = self.ttl - 1 * dt
+    if (self.ttl < 0) then
         self.ttl = 0
     end
 end
