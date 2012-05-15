@@ -26,7 +26,8 @@ function HUD:draw()
     self:drawHP(v.hp)
 
     if v.costume_ttl ~= math.huge then
-        love.graphics.print('Costume time left : ' .. math.ceil(v.costume_ttl) .. ' seconds', 0, 40)
+        local left = math.ceil(v.costume_ttl)
+        love.graphics.print('Costume time left : ' .. left .. ' second' .. (left == 1 and '' or 's'), 0, 40)
     end
 
     -- special info
