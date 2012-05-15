@@ -35,8 +35,10 @@ end
 function Player:draw()
     -- player sprite
     love.graphics.draw(self.costume.image, self.entity.x, self.entity.y)
+    self:drawHP(self.hp)
 end
 
+-- called by Game since we don't want a crosshair for each player
 function Player:drawCrosshair()
     -- crosshair
     local r, g, b, a = love.graphics.getColor() -- backup color
@@ -54,6 +56,23 @@ function Player:drawCrosshair()
     --right
     love.graphics.line(x + d + 4, y, x + d, y)
     love.graphics.setColor(r, g, b, a) -- restore color
+end
+
+function Player:drawHP(hp)
+    local low = (hp <= 20)
+    local oldr, oldg, oldb, olda = love.graphics.getColor()
+
+    if low then
+        love.graphics.setColor(255, 0, 0, 180)
+    else
+        love.graphics.setColor(255, 255, 255, 180)
+    end
+    love.graphics.rectangle( 'line', self.x, self.y, 32, 4 )
+    love.graphics.rectangle( 'fill', self.x + 1, self.y + 1, hp/(100/32) - 2, 2 )
+
+    if low then
+        love.graphics.setColor(oldr, oldg, oldb, olda)
+    end
 end
 
 function Player:getBBox()

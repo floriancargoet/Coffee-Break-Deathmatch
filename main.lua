@@ -30,6 +30,8 @@ function love.load()
     global.game = Game()
     love.mouse.setVisible(false)
     --love.mouse.setGrab(true)
+    -- please don't smooth the lines!
+    love.graphics.setLineStyle('rough')
 end
 
 -- Executed each step
