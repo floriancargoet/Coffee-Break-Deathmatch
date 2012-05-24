@@ -182,7 +182,7 @@ function Game:keypressed(key)
     if key == 'a' then
         self:spawnArmor()
     end
-    if key == 'e' then
+    if key == 'return' then
         self:respawnPlayer(self.player.id)
     end
 end
