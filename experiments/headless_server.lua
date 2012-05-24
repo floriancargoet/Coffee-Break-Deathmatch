@@ -80,15 +80,19 @@ require 'client_game'
 
 Player.updateCrosshair = function() end
 
+local levels = {
+	'test'
+}
+global.level = levels[1]
+
 local HeadlessGame = class('HeadlessGame', ServerGame)
 
 function HeadlessGame:initialize()
     self.keys = {}
 
-    self:loadLevel('test')
+    self:loadLevel(level)
 
-    self.player = self:spawnPlayer('host')
-    self.player.x = -60000
+    self.player = self:createPlayer('host')
 
     self:startServer()
 end
@@ -99,6 +103,9 @@ function HeadlessGame:loadLevel(name)
     self.players = {}
     self.mainCamera = {}
     self.mainCamera.mousepos = function() return {x=0,y=0} end
+end
+
+function HeadlessGame:updateCamera()
 end
 
 global.game = HeadlessGame()

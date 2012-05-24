@@ -1,4 +1,5 @@
 require 'lib/middleclass'
+require 'character'
 require 'player'
 require 'projectile'
 require 'explosion'
@@ -16,7 +17,7 @@ function Game:initialize()
 
     self:loadLevel(level)
 
-    self.player = self:spawnPlayer('host')
+    self.player = self:createPlayer('host')
 
     self.hud = HUD({
         fps = true
@@ -35,27 +36,36 @@ function Game:loadLevel(name)
     self.mainCamera.limit_y = self.map.tileHeight*self.map.height
 end
 
-function Game:spawnPlayer(id)
+function Game:spawnCharacter()
     local spawnIndex = math.random(#self.map.ol['Spawns'].objects)
     local spawnPoint = self.map.ol['Spawns'].objects[spawnIndex]
-    local playerEntity = self.map.ol['Players']:newObject('player', 'Entity', spawnPoint.x, spawnPoint.y, 32, 64)
-    local player = Player(id, playerEntity)
+    local characterEntity = self.map.ol['Players']:newObject('player', 'Entity', spawnPoint.x, spawnPoint.y, 32, 64)
+    local character = Character(characterEntity)
 
-    playerEntity.refObject = player
+    characterEntity.refObject = character
+
+    return character
+end
+
+function Game:createPlayer(id)
+    local player = Player(id)
 
     self.players[id] = player
-
-    if id == 'host' then
-        self.player = player
-    end
 
     return player
 end
 
+function Game:respawnPlayer(id)
+    local player = self.players[id]
+    if not player:isSpawned() then
+        self.players[id].character = self:spawnCharacter()
+    end
+end
+
 function Game:killPlayer(id)
     local toRemove = {}
-    for i, playerEntity in ipairs(self.map.ol['Players'].objects) do
-        if self.players[id] == playerEntity.refObject then
+    for i, characterEntity in ipairs(self.map.ol['Players'].objects) do
+        if self.players[id].character == characterEntity.refObject then
             table.insert(toRemove, i)
             break
         end
@@ -65,7 +75,7 @@ function Game:killPlayer(id)
         table.remove(self.map.ol['Players'].objects, object)
     end
 
-    self.players[id] = nil
+    self.players[id].character = nil
 end
 
 function Game:spawnArmor()
@@ -86,12 +96,12 @@ function Game:createExplosion(owner, x, y)
     table.insert(self.timedObjects, explosion)
 end
 
-function Game:checkForItems(player)
+function Game:checkForItems(character)
     local toRemove = {}
     for i, itemObj in ipairs(self.map.ol['Items'].objects) do
         local item = itemObj.refObject
-        if player.x < item.x + item.w and player.x + player.w > item.x and player.y + 12 < item.y + item.h and player.y + player.h > item.y then
-            item:applyEffect(player)
+        if character.x < item.x + item.w and character.x + character.w > item.x and character.y + 12 < item.y + item.h and character.y + character.h > item.y then
+            item:applyEffect(character)
             table.insert(toRemove, i)
         end
     end
@@ -141,22 +151,26 @@ function Game:update(dt)
     end
 
     for id, p in pairs(self.players) do
-        self:checkForItems(p)
-        p:updatePhysics(dt, tiles)
-        p:updateDrawInfo() -- for drawRange optimizations
-
-        if (p.hp <= 0) then
-            self:killPlayer(id)
-            self:spawnPlayer(id)
+        if p:isSpawned() then
+            self:checkForItems(p.character)
+            p.character:updatePhysics(dt, tiles)
+            p.character:updateDrawInfo() -- for drawRange optimizations
+    
+            if (p.character.hp <= 0) then
+                self:killPlayer(id)
+                self:respawnPlayer(id)
+            end
         end
     end
 
     self:updateCamera()
     myPlayer:updateCrosshair(self.mainCamera:mousepos().x, self.mainCamera:mousepos().y)
-    self.hud:update({
-        hp          = myPlayer.hp,
-        costume_ttl = myPlayer.costume.ttl
-    })
+    if myPlayer:isSpawned() then
+        self.hud:update({
+            hp          = myPlayer.character.hp,
+            costume_ttl = myPlayer.character.costume.ttl
+        })
+    end
 
 end
 
@@ -167,6 +181,9 @@ function Game:keypressed(key)
     end
     if key == 'a' then
         self:spawnArmor()
+    end
+    if key == 'e' then
+        self:respawnPlayer(self.player.id)
     end
 end
 
@@ -208,8 +225,13 @@ end
 function Game:updateCamera()
     local cam = self.mainCamera
 
-    local offsetX = self.player.x - cam.pos.x
-    local offsetY = self.player.y - cam.pos.y
+    local offsetX = 0
+    local offsetY = 0
+    
+    if self.player:isSpawned() then
+        offsetX = self.player.character.x - cam.pos.x
+        offsetY = self.player.character.y - cam.pos.y
+    end
 
     -- We let a small zone in which we can move without moving the camera
     local cameraEyeX = 100
@@ -262,5 +284,7 @@ function Game:draw()
     self.mainCamera:detach()
 
     -- HUD
-    self.hud:draw()
+    if self.player:isSpawned() then
+        self.hud:draw()
+    end
 end

@@ -18,8 +18,8 @@ function ClientGame:initialize()
 
     self:loadLevel(level)
 
-    self.player = self:spawnPlayer('host')
-    self.playerId = 'host'
+    self.player = self:createPlayer('host')
+    --self.player.character = self:spawnCharacter()
 
     self.hud = HUD({
         fps = true
@@ -31,17 +31,13 @@ function ClientGame:initialize()
     self:startClient()
 end
 
-function ClientGame:spawnLANPlayer(id)
-    local spawnIndex = math.random(#self.map.ol['Spawns'].objects)
-    local spawnPoint = self.map.ol['Spawns'].objects[spawnIndex]
-    local playerEntity = self.map.ol['Players']:newObject('player', 'Entity', spawnPoint.x, spawnPoint.y, 32, 64)
-    local player = LANPlayer(id, playerEntity, self.client)
-
-    playerEntity.refObject = player
+function ClientGame:createLANPlayer(id)
+    local player = LANPlayer(id, self.client)
 
     self.players[id] = player
 
     return player
+
 end
 
 function ClientGame:startClient()
@@ -87,20 +83,25 @@ function ClientGame:updateGameState()
     for id, playerState in pairs(state.players) do
         local player = self.players[id]
         if not player then
-            player = self:spawnLANPlayer(id)
+            player = self:createLANPlayer(id)
         end
-        player.x = playerState.x
-        player.y = playerState.y
-        player.hp = playerState.hp
-        player.entity.x = playerState.x
-        player.entity.y = playerState.y
-        player.speedX = playerState.speedX
-        player.speedY = playerState.speedY
-        player.costume = Costume.registry[playerState.costume]()
-        if not playerState.costumeTime then
-            player.costume.ttl = math.huge
-        else
-            player.costume.ttl = playerState.costumeTime
+        if playerState.character then
+            if not player:isSpawned() then
+                player.character = self:spawnCharacter()
+            end
+            player.character.x = playerState.character.x
+            player.character.y = playerState.character.y
+            player.character.hp = playerState.character.hp
+            player.character.entity.x = playerState.character.x
+            player.character.entity.y = playerState.character.y
+            player.character.speedX = playerState.character.speedX
+            player.character.speedY = playerState.character.speedY
+            player.character.costume = Costume.registry[playerState.character.costume]()
+            if not playerState.character.costumeTime then
+                player.character.costume.ttl = math.huge
+            else
+                player.character.costume.ttl = playerState.character.costumeTime
+            end
         end
     end
     self.timedObjects = {}
@@ -135,6 +136,17 @@ function ClientGame:update(dt)
 
     self.client:update(dt)
     self:updateGameState()
+
+    -- The gamestate could have changed, we should change how that works because it has already been done in Game.update()
+    self:updateCamera()
+    self.player:updateCrosshair(self.mainCamera:mousepos().x, self.mainCamera:mousepos().y)
+    if self.player:isSpawned() then
+        self.hud:update({
+            hp          = self.player.character.hp,
+            costume_ttl = self.player.character.costume.ttl
+        })
+    end
+
 end
 
 function ClientGame:draw()

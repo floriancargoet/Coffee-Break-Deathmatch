@@ -37,9 +37,12 @@ function Projectile:update(dt, tiles, players)
 
     for id, player in pairs(players) do
         if id ~= self.owner.id then
-            if self.x + 2 < player.x + 32 and self.x + 2 > player.x and self.y + 2 < player.y + 64 and self.y + 2 > player.y + 12 then
-                player:hit(self.power)
-                self.alive = false
+            if player.character ~= nil then
+                local character = player.character
+                if self.x + 2 < character.x + 32 and self.x + 2 > character.x and self.y + 2 < character.y + 64 and self.y + 2 > character.y + 12 then
+                    character:hit(self.power)
+                    self.alive = false
+                end
             end
         end
     end

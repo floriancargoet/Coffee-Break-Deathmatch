@@ -16,7 +16,8 @@ function ServerGame:initialize()
 
     self:loadLevel(level)
 
-    self.player = self:spawnPlayer('host')
+    self.player = self:createPlayer('host')
+    --self.player.character = self:spawnCharacter()
 
     self.hud = HUD({
         fps = true
@@ -45,7 +46,8 @@ end
 
 function ServerGame.playerConnect(id)
     game.server:send(TSerial.pack({type = 'playerid', id = id}), id)
-    game:spawnPlayer(id)
+    local newPlayer = game:createPlayer(id)
+    newPlayer.character = game:spawnCharacter()
 end
 
 function ServerGame.playerDisconnect(id)
@@ -80,17 +82,22 @@ function ServerGame:sendGameState()
     state.players = {}
     state.time = os.clock()
     for id, player in pairs(self.players) do
-        state.players[id] = {
-            x = player.x,
-            y = player.y,
-            hp = player.hp,
-            speedX = player.speedX,
-            speedY = player.speedY,
-            costume = player.costume.name,
-            costumeTime = player.costume.ttl
-        }
-        if player.costume.ttl == math.huge then
-            state.players[id].costumeTime = nil
+        state.players[id] = {}
+        if player:isSpawned() then
+            local character = {
+                x = player.character.x,
+                y = player.character.y,
+                hp = player.character.hp,
+                speedX = player.character.speedX,
+                speedY = player.character.speedY,
+                costume = player.character.costume.name,
+                costumeTime = player.character.costume.ttl       
+            }
+            if player.character.costume.ttl == math.huge then
+                character.costumeTime = nil
+            end
+            
+            state.players[id].character = character
         end
     end
     state.timedObjects = {}

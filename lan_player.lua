@@ -2,8 +2,8 @@ require 'player'
 
 global.LANPlayer = class('LANPlayer', Player)
 
-function LANPlayer:initialize(id, entity, client)
-    Player.initialize(self, id, entity)
+function LANPlayer:initialize(id, client)
+    Player.initialize(self, id)
     self.client = client
 end
 
