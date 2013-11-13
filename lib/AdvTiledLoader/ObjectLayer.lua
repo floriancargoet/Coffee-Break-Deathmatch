@@ -1,151 +1,122 @@
 ---------------------------------------------------------------------------------------------------
 -- -= ObjectLayer =-
 ---------------------------------------------------------------------------------------------------
-
 -- Setup
+TILED_LOADER_PATH = TILED_LOADER_PATH or ({...})[1]:gsub("[%.\\/][Oo]bject[Ll]ayer$", "") .. '.'
 local love = love
 local unpack = unpack
 local pairs = pairs
 local ipairs = ipairs
 local Object = require( TILED_LOADER_PATH .. "Object")
-local ObjectLayer = {}
+local ObjectLayer = {class = "ObjectLayer"}
+local grey = {128,128,128,255}
 ObjectLayer.__index = ObjectLayer
 
-
+---------------------------------------------------------------------------------------------------
 -- Creates and returns a new ObjectLayer
 function ObjectLayer:new(map, name, color, opacity, prop)
-	
-	-- Create a new table for our object layer and do some error checking.
-	local ol = {}
-	assert(map, "ObjectLayer:new - Requires a parameter for map")
-	
-	ol.map = map							-- The map this layer belongs to
-	ol.name = name or "Unnamed ObjectLayer"	-- The name of this layer
-	ol.color = color or {255,255,255}		-- The color theme
-	ol.opacity = opacity or 1				-- The opacity
-	ol.objects = {}							-- The layer's objects indexed by type
-	ol.properties = prop or {}				-- Properties set by Tiled.
-	
-	-- Return the new object layer
-	return setmetatable(ol, ObjectLayer)
+    
+    -- Create a new table for our object layer and do some error checking.
+    local layer = setmetatable({}, ObjectLayer)
+    
+    layer.map = map                             -- The map this layer belongs to
+    layer.name = name or "Unnamed ObjectLayer"  -- The name of this layer
+    layer.color = color or grey                 -- The color theme
+    layer.opacity = opacity or 1                -- The opacity
+    layer.objects = {}                          -- The layer's objects indexed numerically
+    layer.properties = prop or {}               -- Properties set by Tiled.
+    layer.visible = true                        -- If false then the layer will not be drawn
+    
+    -- Return the new object layer
+    return layer
 end
 
+---------------------------------------------------------------------------------------------------
 -- Creates a new object, automatically inserts it into the layer, and then returns it
 function ObjectLayer:newObject(name, type, x, y, width, height, gid, prop)
-	local obj = Object:new(self, name, type, x, y, width, height, gid, prop)
-	self.objects[#self.objects+1] = obj
-	return obj
+    local obj = Object:new(self, name, type, x, y, width, height, gid, prop)
+    self.objects[#self.objects+1] = obj
+    return obj
 end
 
+---------------------------------------------------------------------------------------------------
 -- Sorting function for objects. We'll use this below in ObjectLayer:draw()
 local function drawSort(o1, o2) 
-	return o1.drawInfo.order < o2.drawInfo.order 
+    return o1.drawInfo.order < o2.drawInfo.order 
 end
 
+---------------------------------------------------------------------------------------------------
 -- Draws the object layer. The way the objects are drawn depends on the map orientation and
 -- if the object has an associated tile. It tries to draw the objects as closely to the way
 -- Tiled does it as possible.
+local di, dr, drawList, r, g, b, a, line, obj, offsetX, offsetY
 function ObjectLayer:draw()
 
-	local obj, di, offset							-- Some temporary variables
-	local r,g,b,a = love.graphics.getColor()		-- Store the color so we can set it back
-	local line = love.graphics.getLineWidth()		-- Store the line width so we can set it back 
-	local iso = self.map.orientation == "isometric"	-- If true then the map is isometric
-	local tiles = self.map.tiles					-- The map tiles
-	local rng = self.map.drawRange					-- The drawing range. [1-4] = x,y,width,height
-	local drawList = {}								-- A list of the objects to be drawn
-	
-	-- Set the color and line width. Store the old values so we can revert them back at the end.
-	r,g,b,a = love.graphics.getColor()
-	line = love.graphics.getLineWidth()
-	love.graphics.setLineWidth(2)
-	self.color[4] = 255 * self.opacity
-	
-	-- Put only objects that are on the screen in the draw list. If the screen range isn't defined
-	-- add all objects
-	for i = 1,#self.objects do
-		obj = self.objects[i]
-		di = obj.drawInfo
-		-- Draw list is defined
-		if rng[1] and rng[2] and rng[3] and rng[4] then
-			if 	di.right > rng[1]-20 and 
-				di.bottom > rng[2]-20 and 
-				di.left < rng[1]+rng[3]+20 and 
-				di.top < rng[2]+rng[4]+20 then 
-				
-					drawList[#drawList+1] = obj
-			end
-			
-		-- Draw list isn't defined
-		else
-			drawList[#drawList+1] = obj
-		end
-	end
-	
-	-- Sort the draw list by the object's draw order
-	table.sort(drawList, drawSort)
+    -- Early exit if the layer is not visible.
+    if not self.visible then return end
 
-	-- For every object in the draw list
-	for i = 1,#drawList do
-		obj = drawList[i]
-		di = obj.drawInfo
-		
-		-- If the object has a custom draw function then call it
-		if type(obj.draw) == "function" then
-			love.graphics.setColor(r,g,b,a)
-			obj.draw(di.x, di.y)
-		
-		-- The object has a gid - draw a tile
-		elseif obj.gid then
-				love.graphics.setColor(r,g,b,a)
-				tiles[obj.gid]:draw(di.x, di.y)
-				
-		-- If map isn't set to draw tileless objects then do nothing
-		elseif self.map.draw_objects == false then
-		
-		-- Map is isometric - draw a parallelogram
-		elseif iso then
-		
-			-- Draw a parallelogram
-			offset = {}	
-			for k,v in ipairs(di) do 
-				offset[k] = v + (k+1)%2
-			end
+    -- Exit if objects are not suppose to be drawn
+    if not self.map.drawObjects then return end
 
-			love.graphics.setColor(self.color[1], self.color[2], self.color[3], 50)
-			love.graphics.polygon("fill", unpack(di))
-			
-			love.graphics.setColor(0, 0, 0, 255 * self.opacity)
-			love.graphics.polygon("line", unpack(offset))
-			
-			love.graphics.setColor(unpack(self.color))
-			love.graphics.polygon("line", unpack(di))
+    di = nil                            -- The draw info
+    dr = {self.map:getDrawRange()}      -- The drawing range. [1-4] = x, y, width, height
+    drawList = {}                       -- A list of the objects to be drawn
+    r,g,b,a = 255, 255, 255, 255 ---love.graphics.getColor()    -- Save the color so we can set it back at the end
+    line = love.graphics.getLineWidth() -- Save the line width too
+    self.color[4] = 255 * self.opacity  -- Set the opacity
+    
+    -- Put only objects that are on the screen in the draw list. If the screen range isn't defined
+    -- add all objects
+    for i = 1, #self.objects do
+        obj = self.objects[i]
+        obj:updateDrawInfo()
+        di = obj.drawInfo
+        if dr[1] and dr[2] and dr[3] and dr[4] then
+            if  di.right > dr[1]-20 and 
+                di.bottom > dr[2]-20 and 
+                di.left < dr[1]+dr[3]+20 and 
+                di.top < dr[2]+dr[4]+20 then 
+                    drawList[#drawList+1] = obj
+            end
+        else
+            drawList[#drawList+1] = obj
+        end
+    end
+    
+    -- Sort the draw list by the object's draw order
+    table.sort(drawList, drawSort)
 
-		-- Map is orthogonal - draw a rectangle
-		else
-			love.graphics.setColor(self.color[1], self.color[2], self.color[3], 50)
-			love.graphics.rectangle("fill", di.x+1, di.y+1, di[1]-1, di[2]-1)
-			
-			love.graphics.setColor(0, 0, 0, 255 * self.opacity)
-			love.graphics.rectangle("line", di.x+1, di.y+1, di[1], di[2])
-			love.graphics.print(obj.name, di.x+1, di.y-19)
-			
-			love.graphics.setColor(unpack(self.color))
-			love.graphics.rectangle("line", di.x, di.y, di[1], di[2])
-			love.graphics.print(obj.name, di.x, di.y-20)
-		end
-	end
-
-	-- Set back the line width and color as they were before
-	love.graphics.setLineWidth(line)
-	love.graphics.setColor(r,g,b,a)
+    -- Draw all the objects in the draw list.
+    offsetX, offsetY = self.map.offsetX, self.map.offsetY
+    for i = 1, #drawList do 
+        obj = drawList[i]
+        love.graphics.setColor(r,b,g,a)
+        drawList[i]:draw(di.x, di.y, unpack(self.color or neutralColor))
+    end
+    
+    -- Reset the color and line width
+    love.graphics.setColor(r,b,g,a)
+    love.graphics.setLineWidth(line)
 end
 
+---------------------------------------------------------------------------------------------------
+-- Changes an object layer into a custom layer. A function can be passed to convert objects.
+function ObjectLayer:toCustomLayer(convert)
+    if convert then
+        for i = 1, #self.objects do
+            self.objects[i] = convert(self.objects[i])
+        end
+    end
+    self.class = "CustomLayer"
+    return setmetatable(self, nil)
+end
+
+---------------------------------------------------------------------------------------------------
 -- Return the ObjectLayer class
 return ObjectLayer
 
 
---[[Copyright (c) 2011 Casey Baxter
+--[[Copyright (c) 2011-2012 Casey Baxter
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

@@ -70,12 +70,9 @@ function Character:getSurroundingTiles(tiles)
     local collidedTiles = {}
     for tileX = tl[1], br[1] do
         for tileY = tl[2], br[2] do
-            local row = tiles[tileY + 1]
-            if row then
-                local tile = row[tileX + 1]
-                if tile then
-                    table.insert(collidedTiles, {x = tileX + 1, y = tileY + 1, size = tileSize, tileType = tile}) -- tiles have 1-based indexing
-                end
+            local tile = tiles:get(tileX, tileY)
+            if tile then
+                table.insert(collidedTiles, {x = tileX + 1, y = tileY + 1, size = tileSize, tileType = tile.id}) -- tiles have 1-based indexing
             end
         end
     end

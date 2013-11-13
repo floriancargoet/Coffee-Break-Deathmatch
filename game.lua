@@ -37,9 +37,9 @@ function Game:loadLevel(name)
 end
 
 function Game:spawnCharacter()
-    local spawnIndex = math.random(#self.map.ol['Spawns'].objects)
-    local spawnPoint = self.map.ol['Spawns'].objects[spawnIndex]
-    local characterEntity = self.map.ol['Players']:newObject('player', 'Entity', spawnPoint.x, spawnPoint.y, 32, 64)
+    local spawnIndex = math.random(#self.map.layers['Spawns'].objects)
+    local spawnPoint = self.map.layers['Spawns'].objects[spawnIndex]
+    local characterEntity = self.map.layers['Players']:newObject('player', 'Entity', spawnPoint.x, spawnPoint.y, 32, 64)
     local character = Character(characterEntity)
 
     characterEntity.refObject = character
@@ -64,7 +64,7 @@ end
 
 function Game:killPlayer(id)
     local toRemove = {}
-    for i, characterEntity in ipairs(self.map.ol['Players'].objects) do
+    for i, characterEntity in ipairs(self.map.layers['Players'].objects) do
         if self.players[id].character == characterEntity.refObject then
             table.insert(toRemove, i)
             break
@@ -72,16 +72,16 @@ function Game:killPlayer(id)
     end
 
     for i, object in ipairs(toRemove) do
-        table.remove(self.map.ol['Players'].objects, object)
+        table.remove(self.map.layers['Players'].objects, object)
     end
 
     self.players[id].character = nil
 end
 
 function Game:spawnArmor()
-    local spawnIndex = math.random(#self.map.ol['Spawns'].objects)
-    local spawnPoint = self.map.ol['Spawns'].objects[spawnIndex]
-    local armorEntity = self.map.ol['Items']:newObject('item', 'Entity', spawnPoint.x, spawnPoint.y+32, 32, 32)
+    local spawnIndex = math.random(#self.map.layers['Spawns'].objects)
+    local spawnPoint = self.map.layers['Spawns'].objects[spawnIndex]
+    local armorEntity = self.map.layers['Items']:newObject('item', 'Entity', spawnPoint.x, spawnPoint.y+32, 32, 32)
     local armor = ArmorItem:new(armorEntity)
     armorEntity.refObject = armor
 end
@@ -98,7 +98,7 @@ end
 
 function Game:checkForItems(character)
     local toRemove = {}
-    for i, itemObj in ipairs(self.map.ol['Items'].objects) do
+    for i, itemObj in ipairs(self.map.layers['Items'].objects) do
         local item = itemObj.refObject
         if character.x < item.x + item.w and character.x + character.w > item.x and character.y + 12 < item.y + item.h and character.y + character.h > item.y then
             item:applyEffect(character)
@@ -107,7 +107,7 @@ function Game:checkForItems(character)
     end
 
     for i, object in ipairs(toRemove) do
-        table.remove(self.map.ol['Items'].objects, object)
+        table.remove(self.map.layers['Items'].objects, object)
     end
 end
 
@@ -129,7 +129,7 @@ end
 -- Executed each step
 function Game:update(dt)
 
-    local tiles = self.map.tl['tiles'].tileData
+    local tiles = self.map.layers['tiles']
 
     self:updateTimedObjects(dt, tiles, self.players)
 
@@ -267,6 +267,8 @@ function Game:updateCamera()
     if cam:worldCoords(love.graphics.getWidth(), love.graphics.getHeight()).y > cam.limit_y then
         cam.pos.y = cam.limit_y-(cam.pos.y-originY)
     end
+
+    self.map:setDrawRange(cam:worldCoords(0,0).x, cam:worldCoords(0,0).y, cam:worldCoords(love.graphics.getWidth(), love.graphics.getHeight()).x, cam:worldCoords(love.graphics.getWidth(), love.graphics.getHeight()).y)
 
 end
 

@@ -1,268 +1,428 @@
 ---------------------------------------------------------------------------------------------------
 -- -= TileLayer =-
 ---------------------------------------------------------------------------------------------------
-
 -- Setup
-local floor = math.floor
+TILED_LOADER_PATH = TILED_LOADER_PATH or ({...})[1]:gsub("[%.\\/][Tt]ile[Ll]ayer$", "") .. '.'
+local math = math
 local type = type
 local love = love
-local TileLayer = {}
-TileLayer.__index = TileLayer
+local Grid = require(TILED_LOADER_PATH .. "Grid")
+local TileLayer = {class = "TileLayer"}
+TileLayer.__index = function(t, i) return TileLayer[i] or Grid[i] end
+TileLayer.__call = Grid.__call
 
+----------------------------------------------------------------------------------------------------
 -- Returns a new TileLayer
 function TileLayer:new(map, name, opacity, prop)
-	assert( map and name , "TileLayer:new - Needs at least 2 parameters for the map and name.")
-	local tl = {}
-	
-	-- Public:
-	tl.name = name				-- The name of the tile layer
-	tl.map = map 				-- The map that this layer belongs to
-	tl.opacity = opacity or 1	-- The opacity to draw the tiles (0-1)
-	tl.properties = prop or {}	-- Properties set by Tiled
-	tl.tileData = {}			-- 2d array containing the tile locations
-	tl.useSpriteBatch = nil		-- If true then the layer is rendered with sprite batches. If
-									-- false then the layer will not use sprite batches. If nil then 
-									-- map.useSpriteBatch will be used. Note that using sprite 
-									-- batches will break the draw order when using multiple tilesets
-									-- on the same layer. Using Map.drawAfterTile is also not possible.
-	-- Private:
-	tl._batches = {}			-- Keeps track of the sprite batches for each tileset
-	tl._flippedTiles = {}		-- Stores the flipped tile locations.
-	tl._afterTileFunctions = {}	-- Functions that must happen right after a tile is drawn.
-	tl._afterTileIndexes = {}	-- Keeps track of _afterTileFunctions indexes so we can clear them.
-	tl._previousUseSpriteBatch = false	-- The previous useSpriteBatch. If this is different then we 
-											-- need to force a special redraw
-	
-	for i=1,tl.map.height do tl._afterTileFunctions[i] = {} end
-	return setmetatable(tl, TileLayer)
+    if not map or not name then 
+        error("TileLayer:new - Needs at least 2 parameters for the map and name.")
+    end
+    
+    local tl = setmetatable(Grid:new(), TileLayer)
+    
+    prop = prop or {}
+    
+    -- Public:
+    tl.name = name                              -- The name of the tile layer
+    tl.map = map                                -- The map that this layer belongs to
+    tl.opacity = opacity or 1                   -- The opacity to draw the tiles (0-1)
+    tl.properties = prop                        -- Properties set by Tiled
+    tl.visible = true                           -- If false then the layer will not be drawn
+    
+    tl.useSpriteBatch = prop.alt_useSpriteBatch -- If true then the layer is rendered with sprite 
+                                                -- batches. If false then the layer will not use 
+                                                -- sprite batches. If nil then map.useSpriteBatch 
+                                                -- will be used. 
+    
+    tl.parallaxX = prop.atl_parallaxX or 1      -- The horizontal speed of the parallax. 1 is normal
+    tl.parallaxY = prop.atl_parallaxX or 1      -- The vertical speed of the parallax. 1 is normal
+    tl.offsetX = prop.atl_offsetX or 0          -- Drawing offset X
+    tl.offsetY = prop.atl_offsetY or 0          -- Drawing offset Y
+    
+    -- Private:
+    tl._redraw = true                   -- If true then the layer needs to redraw tis sprite batches.
+    tl._tileRange = {0,0,0,0}           -- Keeps the drawn tile range for the layer
+    tl._previousTileRange = {0,0,0,0}   -- Previous _tileRange
+    tl._batches = {}                    -- Keeps track of the sprite batches for each tileset
+    tl._flippedTiles = Grid:new()       -- Stores the flipped tile locations. 
+                                            -- 1 = flipped X, 2 = flipped Y, 3 = both
+    tl._afterTileFunction = nil         -- A function that handles drawing things after individual
+                                            -- tiles. This will not work with SpriteBatches.
+    tl._afterTileArgs = nil             -- Starting arguments for the after tile function
+    tl._previousUseSpriteBatch = false  -- The previous useSpriteBatch. If this is different then we 
+                                            -- need to force a special redraw
+    return tl
 end
 
--- Clears the draw list of any functions
-function TileLayer:clearAfterTile()
-	local cells, indexes = self._afterTileFunctions, self._afterTileIndexes
-	local cell = false
-	for i = 1,#indexes,2 do
-		cell = cells[ indexes[i] ][ indexes[i+1] ]
-		for k = 1,#cell do
-			cell[k] = nil
-		end
-		indexes[i], indexes[i+1] = nil, nil
-	end
+----------------------------------------------------------------------------------------------------
+-- Clears the tile layer of its after tile function.
+function TileLayer:clearAfterTileFunction()
+    self._afterTileFunction = nil
+    self._afterTileArgs = nil
 end
 
--- Adds a function to the tile's draw list
-function TileLayer:drawAfterTile(h, w, funct)
-	if self.useSpriteBatch ~= nil and self.useSpriteBatch or map.useSpriteBatch then 
-		error("TileLayer:drawAfterTile - This function is not possible with sprite batches enabled.")
-	end
-	local ati = self._afterTileIndexes
-	ati[#ati+1] = h
-	ati[#ati+1] = w
-	if not self._afterTileFunctions[h] then self._afterTileFunctions[h] = {} end
-	if not self._afterTileFunctions[h][w] then self._afterTileFunctions[h][w] = {} end
-	self._afterTileFunctions[h][w][ #self._afterTileFunctions[h][w]+1 ] = funct
+----------------------------------------------------------------------------------------------------
+-- Sets a function that will be called after every tile. funct(layer, x, y, drawX, drawY ...)
+function TileLayer:setAfterTileFunction(funct, ...)
+    self._afterTileFunction = funct
+    local args = {...}
+    if #args > 0 then self._afterTileArgs = args end
 end
 
+----------------------------------------------------------------------------------------------------
 -- These are used in TileLayer:draw() but since that function is called so often we'll define them
 -- outside to prevent them from being created and destroyed all the time.
-local map, tiles, tileData, postDraw, useSpriteBatch, tile, width, height
+local map, tile, tiles, postDraw, useSpriteBatch, tile, width, height
 local at, drawX, drawY, flipX, flipY, r, g, b, a, halfW, halfH
-
+local x1, y1, x2, y2
 -- Draws the TileLayer.
 function TileLayer:draw()
 
-	-- We access these a lot so we'll shorted them a bit. 
-	map, tiles, tileData = self.map, self.map.tiles, self.tileData
-	-- Same with post draw
-	postDraw = self.postDraw
-	
-	-- If useSpriteBatch was turned on then we need to force redraw the sprite batches
-	if self.useSpriteBatch ~= self._previousUseSpriteBatch then map:forceRedraw() end
-	-- Set the previous useSpriteBatch
-	self._previousUseSpriteBatch = self.useSpriteBatch
-	-- If useSpriteBatch is set for this layer then use that, otherwise use the map's setting.
-	useSpriteBatch = self.useSpriteBatch ~= nil and self.useSpriteBatch or map.useSpriteBatch
-	
-	-- We'll blend the set alpha in with the current alpha
-	r,g,b,a = love.graphics.getColor()
-	love.graphics.setColor(r,g,b, a*self.opacity)
-	
-	self._previousUseSpriteBatch = self.useSpriteBatch
-	
-	
-	-- Clear sprite batches if the screen has changed.
-	if map._specialRedraw and useSpriteBatch then
-		for k,v in pairs(self._batches) do
-			v:clear()
-		end
-	end
-	
-	-- Get the tile range
-	local x1, y1, x2, y2 = map._tileRange[1], map._tileRange[2], map._tileRange[3], map._tileRange[4]
-	
-	-- Only draw if we're not using sprite batches or we need to update the sprite batches.
-	if map._specialRedraw or not useSpriteBatch then
-	
-		-- Orthogonal tiles
-		if map.orientation == "orthogonal" then
-			-- From top to bottom
-			for h = y1, y2 do 
-				-- From left to right
-				for w = x1,x2 do
-					-- Check and see if the tile is flipped
-					-- 1 = flipped X;  2 = flipped Y;  3 = flipped X and Y
-					flipX, flipY = 1, 1
-					if self._flippedTiles[h] then
-						if self._flippedTiles[h][w] then
-							flipX = (self._flippedTiles[h][w] % 2) == 1 and -1 or 1
-							flipY = (self._flippedTiles[h][w] / 2) >= 1 and -1 or 1
-						end
-					end
-					-- Get the tile
-					tile = map.tiles[ self.tileData[h][w] ]
-					if tile and tile ~= 0 then 
-						-- Get the half-width and half-height
-						halfW, halfH = tile.width*0.5, tile.height*0.5
-						-- Draw the tile from the bottom left corner
-						drawX, drawY = (w-1)*map.tileWidth, h*map.tileHeight
-						if useSpriteBatch then
-							-- If we dont have a spritebatch for the current tile's tileset then make one
-							if not self._batches[tile.tileset] then 
-								self._batches[tile.tileset] = love.graphics.newSpriteBatch(
-																		tile.tileset.image, 
-																		map.width * map.height)
-							end
-							self._batches[tile.tileset]:addq(tile.quad, drawX+halfW, drawY-halfH, 0, flipX, flipY, halfW, halfH)
-						else
-							tile:draw(drawX+halfW, drawY-halfH, 0, flipX, flipY, halfW, halfH)
-							-- If there's something in the _afterTileFunctions for this tile then call it
-							at = self._afterTileFunctions[h][w] 
-							if type(at) == "nil" then
-							elseif type(at) == "function" then at(drawX, drawY)
-							elseif type(at) == "table" then for i=1,#at do at[i](drawX, drawY) end end
-						end -- sprite batches
-					end --drawable tile
-				end -- left to right
-			end -- top to bottom
-		end --orthogonal tiles
-	
+    -- Early exit of the layer is not visible
+    if not self.visible then return end
 
-		-- Isometric tiles
-		if map.orientation == "isometric" then
-			local h, w
-			-- Get the starting x drawing location
-			draw_start = map.height * map.tileWidth/2
-			-- Draw each tile starting from the top left tile. Make sure we have enough
-			-- room to draw the widest and tallest tile in the map.
-			for down=0,y2 do 
-				for layer=0,1 do
-					for right=0,x2 do
-						h = y1 - right + down 
-						w = x1	+ right + down + layer
-						-- If there is a tile row
-						if tileData[h] then
-							-- Check and see if the tile is flipped
-							-- 1 = flipped X;  2 = flipped Y;  3 = flipped X and Y
-							flipX, flipY = 1, 1
-							if self._flippedTiles[h] then
-								if self._flippedTiles[h][w] then
-									flipX = (self._flippedTiles[h][w] % 2) == 1 and -1 or 1
-									flipY = (self._flippedTiles[h][w] / 2) >= 1 and -1 or 1
-								end
-							end
-							-- Get the tile
-							tile = tiles[ tileData[h][w] ]
-							-- If the tile is drawable then draw the tile
-							if tile ~= nil and tile ~= 0 then 
-								-- Get the half-width and half-height
-								halfW, halfH = tile.width*0.5, tile.height*0.5
-								-- Get the tile draw location
-								drawX = floor(draw_start + map.tileWidth/2 * (w - h-2))
-								drawY = floor(map.tileHeight/2 * (w + h))
-								-- Using sprite batches
-								if useSpriteBatch then
-									-- If we dont have a spritebatch for the current tile's tileset then make one
-									if not self._batches[tile.tileset] then 
-										self._batches[tile.tileset] = love.graphics.newSpriteBatch(
-																				tile.tileset.image, 
-																				map.width * map.height)
-									end
-									-- Add the tile to the sprite batch.
-									self._batches[tile.tileset]:addq(tile.quad, drawX+halfW, drawY-halfH, 0, flipX, flipY, halfW, halfH)
-								-- Not using sprite batches
-								else
-									tile:draw(drawX+halfW, drawY-halfH, 0, flipX, flipY, halfW, halfH)
-									-- If there's something in the _afterTileFunctions for this tile then call it
-									at = self._afterTileFunctions[h][w] 
-									if type(at) == "nil" then
-									elseif type(at) == "function" then at(drawX, drawY)
-									elseif type(at) == "table" then for i=1,#at do at[i](drawX, drawY) end end
-								end -- sprite batches
-							end -- tile drawable
-						end -- tile row
-					end -- right
-				end -- layer
-			end -- down
-		end --isometric
-		
-	end -- draw
+    -- We access these a lot so we'll shorted them a bit. 
+    map, tiles = self.map, self.map.tiles
+    postDraw = self.postDraw
+    
+    -- If useSpriteBatch was changed then we need to force the sprite batches to redraw.
+    if self.useSpriteBatch ~= self._previousUseSpriteBatch then map:forceRedraw() end
+    
+    -- Set the previous useSpriteBatch
+    self._previousUseSpriteBatch = self.useSpriteBatch
+    
+    -- If useSpriteBatch is set for this layer then use that, otherwise use the map's setting.
+    useSpriteBatch = self.useSpriteBatch ~= nil and self.useSpriteBatch or map.useSpriteBatch
+    
+    -- We'll blend the set alpha in with the current alpha
+    r,g,b,a = love.graphics.getColor()
+    love.graphics.setColor(r,g,b, a*self.opacity)
+    
+    -- Clear sprite batches if the screen has changed.
+    if self._redraw and useSpriteBatch then
+        for k,v in pairs(self._batches) do
+            v:clear()
+        end
+    end
+    
+    -- Get the tile range
+    x1, y1, x2, y2 = self._tileRange[1], self._tileRange[2], self._tileRange[3], self._tileRange[4]
+    
+    -- Translate for the parallax
+    if self.parallaxX ~= 1 or self.parallaxY ~= 1 then
+        love.graphics.push()
+        love.graphics.translate(math.floor(map.viewX - map.viewX*self.parallaxX), 
+                                math.floor(map.viewY - map.viewY*self.parallaxY))
+    end
+    
+    -- Only draw if we're not using sprite batches or we need to update the sprite batches.
+    if self._redraw or not useSpriteBatch then
+    
+        -- Bind the sprite batches
+        if useSpriteBatch then 
+            for k, batch in pairs(self._batches) do
+                batch:bind()
+            end
+        end
+    
+        -- Orthogonal tiles
+        if map.orientation == "orthogonal" then
+        
+            -- Go through each tile
+            for x,y,tile in self:rectangle(x1,y1,x2,y2) do
+            
+                -- Get the half-width and half-height
+                halfW, halfH = tile.width*0.5, tile.height*0.5
+                
+                -- Draw the tile from the bottom left corner
+                drawX, drawY = (x)*map.tileWidth, (y+1)*map.tileHeight
+                
+                -- Apply the offset
+                drawX = drawX - map.offsetX - self.offsetX
+                drawY = drawY - map.offsetY - self.offsetY
+                
+                -- Get the flipped tiles
+                if self._flippedTiles(x,y) then
+                    rot =  (self._flippedTiles(x,y) % 2) == 1 and true or false
+                    flipY = (self._flippedTiles(x,y) % 4) >= 2 and -1 or 1
+                    flipX = self._flippedTiles(x,y) >= 4 and -1 or 1
+                    if rot then flipX, flipY = -flipY, flipX end
+                else
+                    rot, flipX, flipY = false, 1, 1
+                end
+                
+                -- If we are using spritebatches
+                if useSpriteBatch then
+                    -- If we dont have a spritebatch for the current tile's tileset then make one
+                    if not self._batches[tile.tileset] then 
+                        self._batches[tile.tileset] = love.graphics.newSpriteBatch(
+                                                        tile.tileset.image, map.width * map.height)
+                        self._batches[tile.tileset]:bind()
+                    end
+                    -- Add the quad to the spritebatch
+                    self._batches[tile.tileset]:addq(tile.quad, drawX + halfW, 
+                                    drawY - halfH, 
+                                    rot and math.pi*1.5 or 0, 
+                                    flipX, flipY, halfW, halfH)
+                                    
+                -- If we are not using spritebatches
+                else
+                    -- Draw the tile
+                    tile:draw(drawX + halfW,
+                          drawY - halfH, 
+                          rot and math.pi*1.5 or 0, 
+                          flipX, flipY, halfW, halfH)
+                          
+                    -- Call the after tile function
+                    if self._afterTileFunction then 
+                        if self._afterTileArgs then
+                            self._afterTileFunction(self, x, y, drawX, drawY, 
+                                                    unpack(self._afterTileArgs))
+                        else
+                            self._afterTileFunction(self, x, y, drawX, drawY)
+                        end
+                    end
+                end
+            end
+        end
+        
+        -- Isometric tiles
+        if map.orientation == "isometric" then
+            local x,y
+            
+            -- Get the starting x drawing location
+            draw_start = map.height * map.tileWidth/2
+            
+            -- Draw each tile starting from the top left tile. Make sure we have enough
+            -- room to draw the widest and tallest tile in the map.
+            for down=0,y2 do 
+                for layer=0,1 do
+                    for right=0,x2 do
+                        x = x1 + right + down + layer - 1
+                        y = y1 - right + down - 1
+                        
+                        -- If there is a tile row
+                        if self(x,y) then
+                        
+                            -- Check and see if the tile is flipped
+                            if self._flippedTiles(x,y) then
+                                rot =  (self._flippedTiles(x,y) % 2) == 1 and true or false
+                                flipY = (self._flippedTiles(x,y) % 4) >= 2 and -1 or 1
+                                flipX = self._flippedTiles(x,y) >= 4 and -1 or 1
+                                if rot then flipX, flipY = -flipY, flipX end
+                            else
+                                rot, flipX, flipY = false, 1, 1
+                            end
+                            
+                            -- Get the tile
+                            tile = self(x,y)
+                            
+                            -- If the tile exists then draw the tile
+                            if tile then 
+                            
+                                -- Get the half-width and half-height
+                                halfW, halfH = tile.width*0.5, tile.height*0.5
+                                
+                                -- Get the tile draw location
+                                drawX = math.floor(draw_start + map.tileWidth/2 * (x - y-2))
+                                drawY = math.floor(map.tileHeight/2 * (x + y+2))
+                                
+                                -- Apply the offset
+                                drawX = drawX - map.offsetX - self.offsetX
+                                drawY = drawY - map.offsetY - self.offsetY
+                                
+                                -- Using sprite batches
+                                if useSpriteBatch then
+                                    -- If we dont have a spritebatch for the current tile's tileset 
+                                    -- then make one
+                                    if not self._batches[tile.tileset] then 
+                                        self._batches[tile.tileset] = love.graphics.newSpriteBatch(
+                                                                            tile.tileset.image, 
+                                                                            map.width * map.height)
+                                        -- Bind the sprite batch
+                                        self._batches[tile.tileset]:bind()
+                                    end
+                                    -- Add the tile to the sprite batch.
+                                    self._batches[tile.tileset]:addq(tile.quad, drawX + halfW + 
+                                                                (rot and halfW or 0), 
+                                                                drawY-halfH+(rot and halfW or 0), 
+                                                                rot and math.pi*1.5 or 0, 
+                                                                flipX, flipY, halfW, halfH)
+                                                                    
+                                -- Not using sprite batches
+                                else
+                                    tile:draw(drawX + halfW + (rot and halfW or 0), 
+                                                drawY - halfH + (rot and halfW or 0), 
+                                                rot and math.pi*1.5 or 0, 
+                                                flipX, flipY, halfW, halfH)
+                                                
+                                    -- Call the after tile function
+                                    if self._afterTileFunction then 
+                                        if self._afterTileArgs then
+                                            self._afterTileFunction(self, x, y, drawX, drawY,
+                                                                    unpack(self._afterTileArgs))
+                                        else
+                                            self._afterTileFunction(self, x, y, drawX, drawY)
+                                        end
+                                    end
+                                    
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        
+        -- Unbind the sprite batches
+         if useSpriteBatch then 
+            for k, batch in pairs(self._batches) do
+                batch:unbind()
+            end
+        end
+        
+    end
+    
+    -- We finished redrawing
+    self._redraw = false
+    
+    -- If sprite batches are turned on then render them
+    if useSpriteBatch then
+        for k, batch in pairs(self._batches) do
+            love.graphics.draw(batch)
+        end
+    end
+    
+    -- If we applied a translation for our parallax then remove it
+    if self.parallaxX ~= 1 or self.parallaxY ~= 1 then
+        love.graphics.pop()
+    end
+    
+    -- Change the color back
+    love.graphics.setColor(r,g,b,a)
+end
 
-	-- If sprite batches are turned on then render them
-	if useSpriteBatch then
-		for k,v in pairs(self._batches) do
-			love.graphics.draw(v)
-		end
-	end
-	
-	-- Clears the draw list
-	self:clearAfterTile()
-	
-	-- Change the color back
-	love.graphics.setColor(r,g,b,a)
+----------------------------------------------------------------------------------------------------
+-- This copies a tile so that you can paste it in another spot. The pasted tile will keep the
+-- rotation and flipped status. You can copy and paste between layers.
+local flippedVal = 2^29
+function TileLayer:tileCopy(x,y)
+    if not self(x,y) then 
+        self.map._tileClipboard = 0 
+    else
+        self.map._tileClipboard = self(x,y).id + (self._flippedTiles(x,y) or 0) * flippedVal
+    end
+end
+
+----------------------------------------------------------------------------------------------------
+-- Paste a copied tile.
+function TileLayer:tilePaste(x,y)
+    self._redraw = true
+    if not self.map._tileClipboard then
+        error("TileLayer:tilePaste() - A tile must be copied with tileCopy() before pasting")
+    end
+    local clip = self.map._tileClipboard 
+    if clip / flippedVal > 0 then
+        self._flippedTiles:set(x, y, math.floor(clip / flippedVal))
+    end
+    self:set(x, y, self.map.tiles[clip % flippedVal])
+end
+
+----------------------------------------------------------------------------------------------------
+-- Flip the tile's X. If doFlip is not specified then the flip is toggled.
+function TileLayer:tileFlipX(x, y, doFlip)
+    self._redraw = true
+    local flip = self._flippedTiles(x,y) or 0
+    if doFlip ~= false and flip < 4 then 
+        flip = flip + 4
+    elseif doFlip ~= true and flip >= 4 then 
+        flip = flip - 4
+    end
+    self._flippedTiles:set(x, y, flip ~= 0 and flip or nil)
+end
+
+----------------------------------------------------------------------------------------------------
+-- Flip the tile's Y. If doFlip is not specified then the flip is toggled.
+function TileLayer:tileFlipY(x, y, doFlip)
+    self.redraw = true
+    local flip = self._flippedTiles(x,y) or 0
+    if doFlip ~= false and flip % 4 < 2 then 
+        flip = flip + 2
+    elseif doFlip ~= true and flip % 4 >= 2 then 
+        flip = flip - 2
+    end
+    self._flippedTiles:set(x, y, flip ~= 0 and flip or nil)
+end
+
+----------------------------------------------------------------------------------------------------
+-- Rotate the tile.
+function TileLayer:tileRotate(x, y, rot)
+    local flip = self._flippedTiles(x,y) or 0
+    if rot then flip = rot % 8
+    elseif flip == 0 then flip = 5
+    elseif flip == 1 then flip = 4 
+    elseif flip == 2 then flip = 1
+    elseif flip == 3 then flip = 0 
+    elseif flip == 4 then flip = 7
+    elseif flip == 5 then flip = 6
+    elseif flip == 6 then flip = 3
+    elseif flip == 7 then flip = 2 
+    end
+    self._flippedTiles:set(x, y, flip ~= 0 and flip or nil)
 end
 
 ----------------------------------------------------------------------------------------------------
 -- Private
 ----------------------------------------------------------------------------------------------------
 
--- Creates the tileData from a table containing each tile id in sequential order
+----------------------------------------------------------------------------------------------------
+-- Creates the tile data from a table containing each tile id in sequential order
 -- from left-to-right, top-to-bottom.
+str = ""
 function TileLayer:_populate(t)
-	-- Some temporary storage
-	local width, height =  self.map.width, self.map.height
-	local flipX, flipY
-	local i = 1
-	-- The values that indicate flipped tiles are in the last two binary digits.
-	local flipXVal, flipYVal = 2^31, 2^30
-	self.tileData = {}
-	-- Inset the tile data
-	for y = 1,height do
-		self.tileData[y] = {}
-		for x = 1,width do
-			-- If the tile is nil then make it zero
-			if t[i] == nil then t[i] = 0 end
-			-- Check for flipped tiles and store them in self._flippedTiles
-			flipX = floor(t[i] / flipXVal)
-			t[i] = t[i] % flipXVal
-			flipY = floor(t[i] / flipYVal)
-			t[i] = t[i] % flipYVal
-			-- If a tile is flipped we need to make an entry for it
-			-- 1 = flipped X;  2 = flipped Y;  3 = flipped X and Y
-			if flipX ~= 0 or flipY ~= 0 then
-				if not self._flippedTiles[y] then self._flippedTiles[y] = {} end
-				self._flippedTiles[y][x] = flipX + flipY*2
-			end
-			self.tileData[y][x] =  t[i]
-			i = i + 1
-		end
-	end
+
+    str = ""
+    local lasty = 0
+    for i=1,#t do
+        str = str .. t[i]
+        if lasty ~= math.floor(i/self.map.width) then
+            str = str .. "\n"
+            lasty = math.floor(i/self.map.width)
+        end
+    end
+    
+    -- Some temporary storage
+    local width, height =  self.map.width, self.map.height
+    local tileID
+    
+    -- The values that indicate flipped tiles are in the last three binary digits. We need
+    -- to seperate those.
+    local flipped = 2^29
+    
+    -- Clear the tiles
+    self:clear()
+    
+    -- Go through every tile
+    for x,y,v in self:rectangle(0,0,width-1,height-1,true) do
+        tileID = t[width*y+x+1] or 0
+        
+        -- If the tile has a value in the last three binary digits then we seperate them
+        if tileID >= flipped then 
+            self._flippedTiles:set(x, y, math.floor(tileID / flipped))
+            tileID = tileID % flipped
+        end
+        
+        -- Set the tile
+        self:set(x, y, self.map.tiles[tileID])
+    end
 end
 
+----------------------------------------------------------------------------------------------------
 -- Return the TileLayer class
 return TileLayer
 
 
---[[Copyright (c) 2011 Casey Baxter
+--[[Copyright (c) 2011-2012 Casey Baxter
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -285,3 +445,4 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.--]]
+

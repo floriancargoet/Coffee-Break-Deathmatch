@@ -22,15 +22,13 @@ function Projectile:update(dt, tiles, players)
     self.x = self.x + speedX * dt
     self.y = self.y + speedY * dt
 
-    for j, temp in ipairs(tiles) do
-        for i, tile in ipairs(temp) do
-            if tile ~= 0 then
-                local tileX = (i-1)*32
-                local tileY = (j-1)*32
+    for x, y, tile in tiles:iterate() do
+        if tile and tile.id ~= 0 then
+            local tileX = (x)*32
+            local tileY = (y)*32
 
-                if self.x + 2 < tileX + 32 and self.x + 2 > tileX and self.y + 2 < tileY + 32 and self.y + 2 > tileY then
-                    self.alive = false
-                end
+            if self.x + 2 < tileX + 32 and self.x + 2 > tileX and self.y + 2 < tileY + 32 and self.y + 2 > tileY then
+                self.alive = false
             end
         end
     end
